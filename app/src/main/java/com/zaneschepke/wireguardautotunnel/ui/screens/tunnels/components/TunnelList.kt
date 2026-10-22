@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.overscroll
 import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.CallMerge
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.DragHandle
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.rounded.Circle
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -498,10 +500,22 @@ private fun tunnelRowDescription(
     return {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             if (entryName != null) {
-                Text(
-                    text = stringResource(R.string.via_entry, entryName),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline,
+                val navController = LocalNavController.current
+                AssistChip(
+                    onClick = { navController.push(Route.EntryTunnel(tunnel.id)) },
+                    label = {
+                        Text(
+                            text = stringResource(R.string.via_entry, entryName),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.AutoMirrored.Outlined.CallMerge,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    },
                 )
             }
             if (latency != null) {
