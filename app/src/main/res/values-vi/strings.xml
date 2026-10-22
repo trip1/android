@@ -8,7 +8,7 @@
     <string name="privacy_policy">Chính sách quyền riêng tư</string>
     <string name="prominent_background_location_message">Tính năng này yêu cầu quyền truy cập vị trí nền (background location permission) để có thể giám sát SSID Wi-Fi ngay cả khi ứng dụng đang đóng. Để biết thêm chi tiết, vui lòng xem Chính sách quyền riêng tư được liên kết trên màn hình Hỗ trợ.</string>
     <string name="prominent_background_location_title">Tiết lộ quyền truy cập vị trí nền</string>
-    <string name="thank_you">Cảm ơn vì đã sử dụng WG Tunnel!</string>
+    <string name="thank_you">Cảm ơn vì đã sử dụng Transwarp!</string>
     <string name="trusted_ssid_value_description">Gửi SSID</string>
     <string name="add_tunnels_text">Thêm từ tệp hoặc tệp zip</string>
     <string name="add_from_qr">Thêm từ mã QR</string>

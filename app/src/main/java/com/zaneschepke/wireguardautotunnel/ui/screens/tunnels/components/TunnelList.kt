@@ -71,7 +71,6 @@ import com.zaneschepke.wireguardautotunnel.ui.state.buildTunnelListRows
 import com.zaneschepke.wireguardautotunnel.ui.theme.AlertRed
 import com.zaneschepke.wireguardautotunnel.ui.theme.SilverTree
 import com.zaneschepke.wireguardautotunnel.ui.theme.Straw
-import com.zaneschepke.wireguardautotunnel.util.extensions.openWebUrl
 import com.zaneschepke.wireguardautotunnel.viewmodel.SharedAppViewModel
 import sh.calvin.reorderable.DragGestureDetector
 import sh.calvin.reorderable.ReorderableItem
@@ -172,7 +171,6 @@ fun TunnelList(
         if (uiState.tunnels.isEmpty() && uiState.groups.isEmpty()) {
             item {
                 GettingStartedSection(
-                    onClick = { context.openWebUrl(it) },
                     modifier = Modifier.animateItem(),
                 )
             }

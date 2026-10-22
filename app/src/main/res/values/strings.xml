@@ -5,19 +5,8 @@
     <string name="app_permission_description">Control tunnels and auto-tunnel features.</string>
     <string name="vpn_channel_id" translatable="false">VPN Channel</string>
     <string name="proxy_channel_id" translatable="false">Proxy Channel</string>
-    <string name="github_url" translatable="false">https://github.com/wgtunnel/wgtunnel/issues</string>
-    <string name="github_sponsors_url" translatable="false">https://github.com/sponsors/zaneschepke</string>
-    <string name="kofi_url" translatable="false">https://ko-fi.com/zaneschepke</string>
-    <string name="liberapay_url" translatable="false">https://liberapay.com/zaneschepke</string>
-    <string name="docs_url" translatable="false">https://wgtunnel.com/docs/getting-started</string>
-    <string name="website_url" translatable="false">https://wgtunnel.com</string>
-    <string name="translation_url" translatable="false">https://translate.wgtunnel.com/project/wgtunnel/invite?h=11b5b7bf2099293095775d4477320c772818907</string>
-    <string name="privacy_policy_url" translatable="false">https://wgtunnel.com/privacy-policy/</string>
-    <string name="docs_wildcards" translatable="false">https://wgtunnel.com/docs/auto-tunneling</string>
-    <string name="docs_remote_control" translatable="false">https://wgtunnel.com/docs/android/settings#remote-app-control-with-intents</string>
-    <string name="matrix_url" translatable="false">https://matrix.to/#/#wg-tunnel-space:matrix.org</string>
-    <string name="telegram_url" translatable="false">https://t.me/wgtunnel</string>
-    <string name="desktop_download_url" translatable="false">https://wgtunnel.com/download</string>
+    <string name="github_url" translatable="false">https://github.com/trip1/android</string>
+    <string name="privacy_policy_url" translatable="false">https://github.com/trip1/android/blob/master/PRIVACY.md</string>
     <string name="error_file_extension">File is not a .conf or .zip</string>
     <string name="tunnels">Tunnels</string>
     <string name="tunnel_mobile_data">Tunnel on mobile data</string>
@@ -26,7 +15,7 @@
     <string name="tunnel_on_ethernet">Tunnel on ethernet</string>
     <string name="prominent_background_location_message">This feature requires background location permission to enable Wi-Fi SSID monitoring even while the application is closed. For more details, please see the Privacy Policy linked on the Support screen.</string>
     <string name="prominent_background_location_title">Background Location Disclosure</string>
-    <string name="thank_you">Thank you for using WG Tunnel!</string>
+    <string name="thank_you">Thank you for using Transwarp!</string>
     <string name="trusted_ssid_value_description">Submit SSID</string>
     <string name="add_tunnels_text">Add from file or zip</string>
     <string name="add_from_qr">Add from QR code</string>
@@ -61,11 +50,6 @@
     <string name="cancel">Cancel</string>
     <string name="unknown_error">Unknown error occurred</string>
     <string name="tunnel_on_wifi">Tunnel on Wi-Fi</string>
-    <string name="my_email" translatable="false">support@zaneschepke.com</string>
-    <string name="email_subject">WG Tunnel Support</string>
-    <string name="email_chooser">Send an email…</string>
-    <string name="docs_description">Read the docs</string>
-    <string name="email_description">Send me an email</string>
     <string name="error_ssid_exists">SSID already exists</string>
     <string name="error_root_denied">Root shell denied</string>
     <string name="error_no_file_explorer">No file explorer installed</string>
@@ -73,9 +57,8 @@
     <string name="delete_tunnel">Delete tunnel</string>
     <string name="delete_tunnel_message">Are you sure you would like to delete the selected tunnels?</string>
     <string name="yes">Yes</string>
-    <string name="no_email_detected">No email app detected</string>
     <string name="no_browser_detected">No browser detected</string>
-    <string name="open_issue">Open an issue</string>
+    <string name="source_code">Source code</string>
     <string name="auto">(Auto)</string>
     <string name="incorrect_pin">Pin is incorrect</string>
     <string name="pin_created">Pin successfully created</string>
@@ -130,7 +113,6 @@
     <string name="start_auto">Start auto-tunnel</string>
     <string name="stop_auto">Stop auto-tunnel</string>
     <string name="monitoring_state_changes">Monitoring state changes</string>
-    <string name="donate">Donate to project</string>
     <string name="local_logging">Local logging</string>
     <string name="add_from_clipboard">Add from clipboard</string>
     <string name="stop_on_no_internet">Stop on no network</string>
@@ -163,8 +145,6 @@
     <string name="save">Save</string>
     <string name="search">Search</string>
     <string name="select">Select</string>
-    <string name="join_telegram">Join Telegram community</string>
-    <string name="join_matrix">Join Matrix community</string>
     <string name="dropdown">Dropdown</string>
     <string name="add_tunnel">Add tunnel</string>
     <string name="export_logs">Export stored logs</string>
@@ -308,13 +288,7 @@
     </string>
     <string name="mode_disabled_template">Feature unavailable in %1$s mode.</string>
     <string name="lockdown">Lockdown</string>
-    <string name="donate_title">Donate</string>
-    <string name="crypto">Cryptocurrency addresses</string>
-    <string name="github_sponsors">GitHub Sponsors</string>
-    <string name="liberapay">Liberapay</string>
-    <string name="kofi">Ko-fi</string>
     <string name="bitcoin_address" translatable="false">bc1qu6dwlwhav7cwp5gv3kyv3cpwrjrra80p75js6u</string>
-    <string name="bitcoin_lightning_address" translatable="false">wgtunnel@cake.cash</string>
     <string name="litecoin_address" translatable="false">ltc1q983jnz3n2zshp2xyme8ant45aah5hv337k8nm7</string>
     <string name="ethereum_address" translatable="false">0xd711c24D0E355d9D694F60B42FdDAFd8653D2786</string>
     <string name="bitcoin_cash_address" translatable="false">bitcoincash:qp6xacvswha2tjfp2rscguq3gd4eecxeuvcgtyjv58</string>
@@ -339,22 +313,12 @@
     <string name="zcash" translatable="false">Zcash (ZEC)</string>
     <string name="stellar" translatable="false">Stellar (XLM)</string>
     <string name="ecash" translatable="false">eCash (XEC)</string>
-    <string name="donation_thanks_intro">Thank you for considering donating to this project!</string>
-    <string name="donation_dev_message">As the sole developer, I work tirelessly to make WG Tunnel the best free and open-source WireGuard client for Android, but this is only possible with your support.</string>
-    <string name="donation_closing">It\'s my dream to work for you on this project full-time.</string>
-    <string name="donation_signoff">Gratefully,</string>
-    <string name="dev_name" translatable="false">Zane</string>
-    <string name="google_donation_message">Unfortunately, due to Google\'s policies, donation links are not allowed in
-        the Play Store version of this app. Please browse the project\'s webpages to find where to donate.
-    </string>
     <string name="delete_active_message">Cannot delete active tunnel.</string>
     <string name="back">Back</string>
     <string name="configuration">Configuration</string>
     <string name="kernel_wireguard_unsupported">Kernel does not include WireGuard support (module missing or not built-in into kernel)!</string>
     <string name="about">About</string>
     <string name="resources">Resources</string>
-    <string name="website">App website</string>
-    <string name="contact">Contact</string>
     <string name="review">Rate app</string>
     <string name="other">Other</string>
     <string name="options">Options</string>
@@ -398,16 +362,7 @@
     <string name="save_and_restart">Save and restart</string>
     <string name="_continue">Continue</string>
     <string name="kill_switch">kill switch</string>
-    <string name="translation">Translation</string>
-    <string name="help_translate">Help translate the app</string>
     <string name="info">Info</string>
-    <string name="already_donated">Already donated</string>
-    <string name="already_donated_description">Disables future donation prompts</string>
-    <string name="donation_prompt_prefix">Thanks for using WG Tunnel! If you are able, please consider</string>
-    <string name="donation_prompt_link">supporting the project</string>
-    <string name="donation_prompt_suffix">to keep it free and improving.</string>
-    <string name="desktop_prompt_message">WG Tunnel is now available on desktop!</string>
-    <string name="desktop_app">Desktop App</string>
     <string name="cookie_packet_junk_size">Cookie packet junk size</string>
     <string name="transport_packet_junk_size">Transport packet junk size</string>
     <string name="special_junk_packet">Special junk packet</string>
@@ -455,7 +410,6 @@
     <string name="global_split_off">Each tunnel uses its own app list</string>
     <string name="global_split_applies">Applies to every tunnel</string>
     <string name="example_import_url" translatable="false">https://123.com/tun.conf</string>
-    <string name="fdroid_url" translatable="false">https://apt.izzysoft.de/fdroid/index/apk/com.zaneschepke.wireguardautotunnel</string>
     <string name="import_url_description">The URL must be secure and serve a .conf file.</string>
     <string name="export_unsupported">Export is not supported on this device</string>
     <string name="export_canceled">Export canceled</string>
@@ -591,8 +545,7 @@
     <string name="restore_ipv6">Restore IPv6</string>
     <string name="restore_ipv6_desc">Attempt to restore IPv6 endpoints when the tunnel is healthy on an IPv6 supported network</string>
     <string name="no_tunnels_yet">Nothing here… yet.</string>
-    <string name="getting_started_guidance">Use the + button to import a tunnel, or view the getting started guide.</string>
-    <string name="getting_started_guide_link">view the getting started guide</string>
+    <string name="getting_started_guidance">Use the + button to import a tunnel or enroll with a mesh code.</string>
     <string name="metered_tunnel_desc">Mark this tunnel as metered so apps treat it like mobile data</string>
     <string name="local_proxy">Local proxy</string>
     <string name="local_proxy_desc">Expose the tunnel as a local SOCKS5/HTTP proxy</string>
@@ -628,7 +581,7 @@
 
     <string name="local_network_permission_title">Local Network Access Needed</string>
 
-    <string name="local_network_permission_intro">WG Tunnel needs access to your local network for several features to work properly.</string>
+    <string name="local_network_permission_intro">Transwarp needs access to your local network for several features to work properly.</string>
 
     <string name="local_network_permission_issues_intro">Without this permission, you may experience issues with:</string>
 

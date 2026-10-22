@@ -42,14 +42,9 @@
     <string name="cancel">უარყოფა</string>
     <string name="unknown_error">დაფიქსირდა უცნობი შეცდომა</string>
     <string name="tunnel_on_wifi">ტუნელის გამოტენება Wi-Fi-ს მეშვეობით</string>
-    <string name="email_subject">ვგ ტუნელის დახმარება</string>
-    <string name="email_chooser">გაგზავნე მეილი…</string>
-    <string name="docs_description">წაიკითხეთ დოკუმენტაცია</string>
-    <string name="email_description">მომწერეთ მეილი</string>
     <string name="error_ssid_exists">SSID უკვე დამატებულია</string>
     <string name="error_root_denied">ვერ მოვიპოვე Root გარემოცვა</string>
     <string name="yes">დიახ</string>
-    <string name="open_issue">დააფიქსირე ხარვეზი</string>
     <string name="auto">(ავტოამტური)</string>
     <string name="incorrect_pin">პინი არის არასწორი</string>
     <string name="pin_created">პინი წარმატებით შეიქმნა</string>

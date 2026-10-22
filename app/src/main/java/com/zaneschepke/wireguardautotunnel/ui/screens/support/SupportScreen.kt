@@ -10,16 +10,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Launch
 import androidx.compose.material.icons.outlined.Balance
-import androidx.compose.material.icons.outlined.Book
-import androidx.compose.material.icons.outlined.Computer
-import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.InstallMobile
-import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Policy
 import androidx.compose.material.icons.outlined.Reviews
-import androidx.compose.material.icons.outlined.Translate
-import androidx.compose.material.icons.outlined.Web
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -61,7 +55,6 @@ import com.zaneschepke.wireguardautotunnel.util.StringValue
 import com.zaneschepke.wireguardautotunnel.util.extensions.canInstallPackages
 import com.zaneschepke.wireguardautotunnel.util.extensions.launchPlayStoreListing
 import com.zaneschepke.wireguardautotunnel.util.extensions.launchPlayStoreReview
-import com.zaneschepke.wireguardautotunnel.util.extensions.launchSupportEmail
 import com.zaneschepke.wireguardautotunnel.util.extensions.openWebUrl
 import com.zaneschepke.wireguardautotunnel.viewmodel.SharedAppViewModel
 import com.zaneschepke.wireguardautotunnel.viewmodel.SupportViewModel
@@ -100,14 +93,7 @@ fun SupportScreen(
         }
     }
 
-    val issuesUrl = stringResource(R.string.github_url)
-    val izzyUrl = stringResource(R.string.fdroid_url)
-    val telegramUrl = stringResource(R.string.telegram_url)
-    val matrixUrl = stringResource(R.string.matrix_url)
-    val docsUrl = stringResource(R.string.docs_url)
-    val websiteUrl = stringResource(R.string.website_url)
-    val desktopDownloadUrl = stringResource(R.string.desktop_download_url)
-    val translationUrl = stringResource(R.string.translation_url)
+    val sourceUrl = stringResource(R.string.github_url)
     val privacyPolicyUrl = stringResource(R.string.privacy_policy_url)
     val playStoreUrl = "https://play.google.com/store/apps/details?id=${context.packageName}"
     val playReviewsUrl =
@@ -176,35 +162,17 @@ fun SupportScreen(
         Column {
             GroupLabel(stringResource(R.string.resources), Modifier.padding(horizontal = 16.dp))
             SurfaceRow(
-                leading = { Icon(Icons.Outlined.Favorite, contentDescription = null) },
-                title = stringResource(R.string.donate),
-                onClick = { navController.push(Route.Donate) },
+                leading = {
+                    Icon(
+                        ImageVector.vectorResource(R.drawable.github),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                    )
+                },
+                title = stringResource(R.string.source_code),
+                trailing = { Icon(Icons.AutoMirrored.Outlined.Launch, null) },
+                onClick = { openWebUrl(sourceUrl) },
                 modifier = Modifier.focusRequester(focusRequester),
-            )
-            SurfaceRow(
-                stringResource(R.string.docs_description),
-                onClick = { openWebUrl(docsUrl) },
-                leading = { Icon(Icons.Outlined.Book, contentDescription = null) },
-                trailing = { Icon(Icons.AutoMirrored.Outlined.Launch, null) },
-            )
-            SurfaceRow(
-                stringResource(R.string.website),
-                onClick = { openWebUrl(websiteUrl) },
-                leading = { Icon(Icons.Outlined.Web, contentDescription = null) },
-                trailing = { Icon(Icons.AutoMirrored.Outlined.Launch, null) },
-            )
-            SurfaceRow(
-                stringResource(R.string.desktop_app),
-                onClick = { openWebUrl(desktopDownloadUrl) },
-                leading = { Icon(Icons.Outlined.Computer, contentDescription = null) },
-                trailing = { Icon(Icons.AutoMirrored.Outlined.Launch, null) },
-            )
-            SurfaceRow(
-                stringResource(R.string.translation),
-                onClick = { openWebUrl(translationUrl) },
-                description = { DescriptionText(stringResource(R.string.help_translate)) },
-                leading = { Icon(Icons.Outlined.Translate, contentDescription = null) },
-                trailing = { Icon(Icons.AutoMirrored.Outlined.Launch, null) },
             )
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.Balance, contentDescription = null) },
@@ -227,65 +195,6 @@ fun SupportScreen(
                     },
                 )
             }
-        }
-        Column {
-            GroupLabel(
-                stringResource(R.string.contact),
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
-            SurfaceRow(
-                leading = {
-                    Icon(
-                        ImageVector.vectorResource(R.drawable.matrix),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                    )
-                },
-                title = stringResource(R.string.join_matrix),
-                trailing = { Icon(Icons.AutoMirrored.Outlined.Launch, null) },
-                onClick = { openWebUrl(matrixUrl) },
-            )
-            SurfaceRow(
-                leading = {
-                    Icon(
-                        ImageVector.vectorResource(R.drawable.telegram),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                    )
-                },
-                title = stringResource(R.string.join_telegram),
-                trailing = { Icon(Icons.AutoMirrored.Outlined.Launch, null) },
-                onClick = { openWebUrl(telegramUrl) },
-            )
-            SurfaceRow(
-                leading = {
-                    Icon(
-                        ImageVector.vectorResource(R.drawable.github),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                    )
-                },
-                title = stringResource(R.string.open_issue),
-                trailing = { Icon(Icons.AutoMirrored.Outlined.Launch, null) },
-                onClick = { openWebUrl(issuesUrl) },
-            )
-            SurfaceRow(
-                leading = { Icon(Icons.Outlined.Mail, contentDescription = null) },
-                title = stringResource(R.string.email_description),
-                trailing = { Icon(Icons.AutoMirrored.Outlined.Launch, null) },
-                onClick = {
-                    context.launchSupportEmail().onFailure {
-                        scope.launch {
-                            viewModel.postSideEffect(
-                                GlobalSideEffect.Snackbar(
-                                    StringValue.StringResource(R.string.no_email_detected),
-                                    ToastType.Error,
-                                )
-                            )
-                        }
-                    }
-                },
-            )
         }
         Column {
             GroupLabel(
@@ -348,7 +257,7 @@ fun SupportScreen(
                     when (BuildConfig.FLAVOR) {
                         Constants.GOOGLE_PLAY_FLAVOR ->
                             context.launchPlayStoreListing().onFailure { openWebUrl(playStoreUrl) }
-                        Constants.FDROID_FLAVOR -> openWebUrl(izzyUrl)
+                        Constants.FDROID_FLAVOR -> openWebUrl("$sourceUrl/releases")
                         // A running or finished download reopens the dialog, no new check
                         else ->
                             if (download is UpdateDownloadState.Downloading || downloadReady) {

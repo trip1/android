@@ -32,17 +32,13 @@
     <string name="cancel">キャンセル</string>
     <string name="unknown_error">不明なエラーが発生しました</string>
     <string name="tunnel_on_wifi">信頼していないWifiでの有効化</string>
-    <string name="email_chooser">メールを送る…</string>
-    <string name="email_description">メールを送る</string>
     <string name="error_ssid_exists">SSIDはすでに存在します</string>
     <string name="error_no_file_explorer">ファイルエクスプローラーはインストールされていません</string>
     <string name="auto_tunnel_title">自動トンネルサービス</string>
     <string name="delete_tunnel">トンネルの削除</string>
     <string name="delete_tunnel_message">このトンネルを削除しますか？</string>
     <string name="yes">はい</string>
-    <string name="no_email_detected">メールアプリは検出されません</string>
     <string name="no_browser_detected">ブラウザは検出されません</string>
-    <string name="open_issue">問題を報告する</string>
     <string name="incorrect_pin">PINが無効です</string>
     <string name="pin_created">PINの登録が完了しました</string>
     <string name="enter_pin">PINコードを入力</string>

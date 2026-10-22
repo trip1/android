@@ -10,7 +10,7 @@
     <string name="tunnel_on_ethernet">Terowongan pada ethernet</string>
     <string name="prominent_background_location_message">Fitur ini memerlukan izin lokasi latar belakang untuk mengaktifkan pemantauan SSID Wi-Fi bahkan saat aplikasi ditutup. Untuk detail selengkapnya, silakan lihat Kebijakan Privasi yang tertaut di layar Dukungan.</string>
     <string name="prominent_background_location_title">Pengungkapan Lokasi Latar Belakang</string>
-    <string name="thank_you">Terima kasih telah menggunakan WG Tunnel!</string>
+    <string name="thank_you">Terima kasih telah menggunakan Transwarp!</string>
     <string name="trusted_ssid_value_description">Kirim SSID</string>
     <string name="add_tunnels_text">Tambah dari file atau zip</string>
     <string name="add_from_qr">Tambah dari kode QR</string>
@@ -43,10 +43,6 @@
     <string name="cancel">Batal</string>
     <string name="unknown_error">Terjadi kesalahan tidak dikenal</string>
     <string name="tunnel_on_wifi">Terowongan pada Wi-Fi</string>
-    <string name="email_subject">Dukungan WG Tunnel</string>
-    <string name="email_chooser">Kirim email…</string>
-    <string name="docs_description">Baca dokumentasi</string>
-    <string name="email_description">Kirim email kepada saya</string>
     <string name="error_ssid_exists">SSID sudah ada</string>
     <string name="error_root_denied">Shell root ditolak</string>
     <string name="error_no_file_explorer">Tidak ada pengelola file yang terpasang</string>
@@ -54,9 +50,7 @@
     <string name="delete_tunnel">Hapus terowongan</string>
     <string name="delete_tunnel_message">Apakah Anda yakin ingin menghapus terowongan yang dipilih?</string>
     <string name="yes">Ya</string>
-    <string name="no_email_detected">Tidak ada aplikasi email yang terdeteksi</string>
     <string name="no_browser_detected">Tidak ada browser yang terdeteksi</string>
-    <string name="open_issue">Buka laporan masalah</string>
     <string name="auto">(Otomatis)</string>
     <string name="incorrect_pin">PIN salah</string>
     <string name="pin_created">PIN berhasil dibuat</string>
@@ -104,7 +98,6 @@
     <string name="start_auto">Mulai terowongan otomatis</string>
     <string name="stop_auto">Hentikan terowongan otomatis</string>
     <string name="monitoring_state_changes">Memantau perubahan status</string>
-    <string name="donate">Donasi ke proyek</string>
     <string name="local_logging">Monitor log lokal</string>
     <string name="add_from_clipboard">Tambah dari clipboard</string>
     <string name="stop_on_no_internet">Hentikan saat tidak ada internet</string>
@@ -131,8 +124,6 @@
     <string name="save">Simpan</string>
     <string name="search">Cari</string>
     <string name="select">Pilih</string>
-    <string name="join_telegram">Bergabung dengan komunitas Telegram</string>
-    <string name="join_matrix">Bergabung dengan komunitas Matrix</string>
     <string name="add_tunnel">Tambah terowongan</string>
     <string name="export_logs">Ekspor log tersimpan</string>
     <string name="delete_logs">Hapus dan bersihkan log</string>
@@ -227,20 +218,11 @@
     <string name="ddns_auto_update">Pembaruan otomatis DNS dinamis</string>
     <string name="ddns_auto_update_description">Memperbarui IP secara otomatis saat DDNS berubah</string>
     <string name="mode_disabled_template">Fitur tidak tersedia dalam mode %1$s.</string>
-    <string name="donate_title">Donasi</string>
-    <string name="crypto">Alamat mata uang kripto</string>
-    <string name="donation_thanks_intro">Terima kasih telah mempertimbangkan untuk berdonasi ke proyek ini!</string>
-    <string name="donation_dev_message">Sebagai satu-satunya pengembang, saya bekerja tanpa henti untuk menjadikan WG Tunnel klien WireGuard gratis dan sumber terbuka terbaik untuk Android, tetapi ini hanya mungkin dengan dukungan Anda.</string>
-    <string name="donation_closing">Impian saya adalah bekerja penuh waktu untuk Anda pada proyek ini.</string>
-    <string name="donation_signoff">Dengan penuh rasa syukur,</string>
-    <string name="google_donation_message">Sayangnya, karena kebijakan Google, tautan donasi tidak diizinkan dalam versi Play Store aplikasi ini. Silakan telusuri halaman web proyek untuk menemukan tempat berdonasi.</string>
     <string name="delete_active_message">Tidak dapat menghapus terowongan yang sedang aktif.</string>
     <string name="back">Kembali</string>
     <string name="configuration">Konfigurasi</string>
     <string name="about">Tentang</string>
     <string name="resources">Sumber daya</string>
-    <string name="website">Situs web aplikasi</string>
-    <string name="contact">Kontak</string>
     <string name="review">Beri nilai aplikasi</string>
     <string name="other">Lainnya</string>
     <string name="options">Opsi</string>
@@ -274,13 +256,6 @@
     <string name="save_changes">Simpan perubahan</string>
     <string name="restart_message_template">Menyimpan perubahan akan menyebabkan %1$s dimulai ulang, apakah Anda ingin melanjutkan?</string>
     <string name="_continue">Lanjutkan</string>
-    <string name="translation">Terjemahan</string>
-    <string name="help_translate">Bantu terjemahkan aplikasi</string>
-    <string name="already_donated">Sudah berdonasi</string>
-    <string name="already_donated_description">Menonaktifkan permintaan donasi di masa mendatang</string>
-    <string name="donation_prompt_prefix">Terima kasih telah menggunakan WG Tunnel! Jika memungkinkan, harap pertimbangkan untuk</string>
-    <string name="donation_prompt_link">mendukung proyek ini</string>
-    <string name="donation_prompt_suffix">agar tetap gratis dan terus berkembang.</string>
     <string name="cookie_packet_junk_size">Ukuran sampah paket cookie</string>
     <string name="transport_packet_junk_size">Ukuran sampah paket transport</string>
     <!-- AmneziaWG 3.0 -->

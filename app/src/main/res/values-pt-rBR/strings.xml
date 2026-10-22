@@ -8,7 +8,7 @@
     <string name="tunnel_on_ethernet">Túnel na ethernet</string>
     <string name="prominent_background_location_message">Este recurso precisa de permissões de localização em segundo plano para ativar o monitoramento do SSID da rede Wi-Fi mesmo quando a aplicação está fechado. Para mais pormenores, por favor veja a Política de Privacidade no ecrã de Suporte.</string>
     <string name="prominent_background_location_title">Revelar a localização em segundo plano</string>
-    <string name="thank_you">Obrigado por usar o WG Tunnel!</string>
+    <string name="thank_you">Obrigado por usar o Transwarp!</string>
     <string name="trusted_ssid_value_description">Envie o SSID</string>
     <string name="add_tunnels_text">Adicionar a partir de ficheiro ou zip</string>
     <string name="add_from_qr">Adicionar a partir de código QR</string>
@@ -39,10 +39,6 @@
     <string name="cancel">Cancelar</string>
     <string name="unknown_error">Ocorreu um erro desconhecido</string>
     <string name="tunnel_on_wifi">Túnel em Wi-Fi não confiável</string>
-    <string name="email_subject">Apoio para o WG Tunnel</string>
-    <string name="email_chooser">Enviar um email…</string>
-    <string name="docs_description">Ler a documentação</string>
-    <string name="email_description">Me envie um email</string>
     <string name="error_ssid_exists">SSID já existe</string>
     <string name="error_root_denied">Shell Root negado</string>
     <string name="error_no_file_explorer">Nenhum explorador de ficheiros instalado</string>
@@ -50,9 +46,7 @@
     <string name="delete_tunnel">Apagar túnel</string>
     <string name="delete_tunnel_message">Tem certeza que quer apagar este túnel?</string>
     <string name="yes">Sim</string>
-    <string name="no_email_detected">Nenhuma aplicação de email detetado</string>
     <string name="no_browser_detected">Nenhum navegador detetado</string>
-    <string name="open_issue">Abrir um problema</string>
     <string name="auto">(automático)</string>
     <string name="incorrect_pin">O Pin está errado</string>
     <string name="pin_created">Pin criado com sucesso</string>
@@ -92,7 +86,6 @@
     <string name="start_auto">Iniciar túnel automático</string>
     <string name="stop_auto">Pausar túnel automático</string>
     <string name="monitoring_state_changes">Monitorar status de alterações</string>
-    <string name="donate">Contribua com esse projeto</string>
     <string name="local_logging">Registro local</string>
     <string name="add_from_clipboard">Adicionar da área de transferência</string>
     <string name="stop_on_no_internet">Interromper quando não há internet</string>

@@ -10,7 +10,7 @@
     <string name="tunnel_on_ethernet">Loo tunnel kohtvõrgus</string>
     <string name="prominent_background_location_message">See funktsionaalsus eeldab, et rakendusel on õigus asukoha ja WiFi SSID taustal tuvastamiseks, seda ka siis, kui rakendus on suletud. Lisateavet leiad Privaatsusreeglite lehelt, leitav Kasutajatoe vaatest.</string>
     <string name="prominent_background_location_title">Teave taustal asukoha tuvastamise kohta</string>
-    <string name="thank_you">Aitäh, et kasutad WG Tunnel rakendust!</string>
+    <string name="thank_you">Aitäh, et kasutad Transwarp rakendust!</string>
     <string name="trusted_ssid_value_description">Saada SSID</string>
     <string name="add_tunnels_text">Lisa conf- või zip-failist</string>
     <string name="add_from_qr">Lisa QR-koodist</string>
@@ -43,10 +43,6 @@
     <string name="cancel">Katkesta</string>
     <string name="unknown_error">Tekkis tundmatu viga</string>
     <string name="tunnel_on_wifi">Loo tunnel WiFi võrgus</string>
-    <string name="email_subject">WG Tunneli kasutajatugi</string>
-    <string name="email_chooser">Saada e-kiri…</string>
-    <string name="docs_description">Loe dokumentatsiooni</string>
-    <string name="email_description">Saada mulle e-kiri</string>
     <string name="error_ssid_exists">SSID on juba olemas</string>
     <string name="error_root_denied">Juurkasutaja õigustes kest on keelatud</string>
     <string name="error_no_file_explorer">Failihaldurit pole paigaldatud</string>
@@ -54,9 +50,7 @@
     <string name="delete_tunnel">Kustuta tunnel</string>
     <string name="delete_tunnel_message">Kindel, et valitud tunnelid kustutada?</string>
     <string name="yes">Jah</string>
-    <string name="no_email_detected">E-posti rakendust ei õnnestu tuvastada</string>
     <string name="no_browser_detected">Veebibrauserit ei õnnestu tuvastada</string>
-    <string name="open_issue">Alusta vearaporti koostamist</string>
     <string name="auto">(automaatne)</string>
     <string name="incorrect_pin">PIN-kood pole õige</string>
     <string name="pin_created">PIN-koodi loomine õnnestus</string>
@@ -104,7 +98,6 @@
     <string name="start_auto">Käivita automaatne tunneldus</string>
     <string name="stop_auto">Peata automaatne tunneldus</string>
     <string name="monitoring_state_changes">Jälgin oleku muudatusi</string>
-    <string name="donate">Toeta projekti rahaliselt</string>
     <string name="local_logging">Kohalike logide jälgija</string>
     <string name="add_from_clipboard">Lisa lõikelaualt</string>
     <string name="stop_on_no_internet">Peata internetiühenduse puudumisel</string>
@@ -135,8 +128,6 @@
     <string name="save">Salvesta</string>
     <string name="search">Otsi</string>
     <string name="select">Vali</string>
-    <string name="join_telegram">Liitu kogukonnaga Telegramis</string>
-    <string name="join_matrix">Liitu kogukonnaga Matrixis</string>
     <string name="dropdown">Rippmenüü</string>
     <string name="add_tunnel">Lisa tunnel</string>
     <string name="export_logs">Ekspordi salvestatud logid</string>
@@ -234,21 +225,11 @@
     <string name="ddns_auto_update_description">IP-aadressi automaatne uuendus DDNS-i muudatuste puhul</string>
     <string name="mode_disabled_template">See funktsionaalsus pole kasutatav %1$s režiimis.</string>
     <string name="lockdown">Lukusta rakendus</string>
-    <string name="donate_title">Toeta rahaliselt</string>
-    <string name="crypto">Krüptovääringute aadressid</string>
-    <string name="github_sponsors">GitHubi sponsorid</string>
-    <string name="donation_thanks_intro">Täname ette, kui plaanid meie projekti toetada!</string>
-    <string name="donation_dev_message">Üksiku arendajana olen väsimatult tegutsenud, et WG Tunnel oleks parim vaba, tasuta ja avatud lähtekoodiga WireGuardi klient Androidi jaoks. Aga kõik see on võimalik vaid siis, kui ka sinu tugi on kaasatud.</string>
-    <string name="donation_closing">Minu unistuseks on teha selle projektiga tööd täiskohaga.</string>
-    <string name="donation_signoff">Suure tänulikkusega,</string>
-    <string name="google_donation_message">Kahjuks Google\'i reeglid ei luba rahalise toetamise linkide lisamist selle rakenduse Play Store\'i versiooni. Palun ava selle projekti veebisait ja leiad vajalikud lingid sealt.</string>
     <string name="delete_active_message">Aktiivset tunnelit ei saa kustutada.</string>
     <string name="back">Tagasi</string>
     <string name="configuration">Seadistused</string>
     <string name="about">Rakenduse teave</string>
     <string name="resources">Ressursid</string>
-    <string name="website">Rakenduse veebisait</string>
-    <string name="contact">Kontakt</string>
     <string name="review">Hinda rakendust</string>
     <string name="other">Muu</string>
     <string name="options">Valikud</string>
@@ -285,14 +266,7 @@
     <string name="restart_message_template">Muudatuste salvestamine käivitab „%1$s“ tunneli uuesti. Kas sa soovid jätkata?</string>
     <string name="_continue">Jätka</string>
     <string name="kill_switch">kiirpeatamine</string>
-    <string name="translation">Tõlked</string>
-    <string name="help_translate">Aita seda rakendust tõlkida</string>
     <string name="info">Teave</string>
-    <string name="already_donated">Juba annetasin</string>
-    <string name="already_donated_description">Lülitab tulevased annetuspalved välja</string>
-    <string name="donation_prompt_prefix">Suur tänu, et toetad rakendust WG Tunnel! Kui sul on võimalik, siis</string>
-    <string name="donation_prompt_link">palun toeta projekti</string>
-    <string name="donation_prompt_suffix">ja nii tagad, et ta jääb vabaks ning pidevalt areneb.</string>
     <string name="cookie_packet_junk_size">Küpsisepaketi rämpsuosa suurus</string>
     <string name="transport_packet_junk_size">Transpordipaketi rämpsuosa suurus</string>
     <!-- AmneziaWG 3.0 -->

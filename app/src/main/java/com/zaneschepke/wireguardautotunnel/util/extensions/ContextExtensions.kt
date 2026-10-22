@@ -75,25 +75,6 @@ fun Context.hasSAFSupport(mimeType: String): Boolean {
     }
 }
 
-fun Context.launchSupportEmail(): Result<Unit> = runCatching {
-    val intent =
-        Intent(Intent.ACTION_SENDTO).apply {
-            data = "mailto:".toUri()
-            putExtra(Intent.EXTRA_EMAIL, arrayOf(getString(R.string.my_email)))
-            putExtra(Intent.EXTRA_SUBJECT, getString(R.string.email_subject))
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-    if (intent.resolveActivity(packageManager) != null) {
-        startActivity(
-            Intent.createChooser(intent, getString(R.string.email_chooser)).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-        )
-    } else {
-        throw IllegalStateException("No email client found")
-    }
-}
-
 fun Context.isRunningOnTv(): Boolean {
     return packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
 }

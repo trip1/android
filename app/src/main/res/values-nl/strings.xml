@@ -9,7 +9,7 @@
     <string name="tunnel_on_ethernet">Tunnel bij ethernet</string>
     <string name="prominent_background_location_message">Deze functie vereist locatierechten om het WiFi SSID te kunnen bepalen. Ook als de applicatie is gesloten. Lees het privacybeleid op het scherm Ondersteuning voor meer informatie.</string>
     <string name="prominent_background_location_title">Achtergrondlocatievrijgave</string>
-    <string name="thank_you">Bedankt voor het gebruiken van WG Tunnel!</string>
+    <string name="thank_you">Bedankt voor het gebruiken van Transwarp!</string>
     <string name="trusted_ssid_value_description">Verstuur SSID</string>
     <string name="add_tunnels_text">Toevoegen uit bestand of zip</string>
     <string name="add_from_qr">Toevoegen met QR code</string>
@@ -36,19 +36,13 @@
     <string name="cancel">Annuleren</string>
     <string name="unknown_error">Onbekende fout opgetreden</string>
     <string name="tunnel_on_wifi">Tunnelen bij WiFi</string>
-    <string name="email_subject">WG Tunnel ondersteuning</string>
-    <string name="email_chooser">Stuur een email…</string>
-    <string name="docs_description">Lees de documentatie</string>
-    <string name="email_description">Stuur mij een email</string>
     <string name="error_ssid_exists">SSID bestaat al</string>
     <string name="error_root_denied">Root toegang geweigerd</string>
     <string name="error_no_file_explorer">Geen bestandsverkenner geïnstalleerd</string>
     <string name="delete_tunnel">Tunnel verwijderen</string>
     <string name="delete_tunnel_message">Weet u zeker dat u de geselecteerde tunnels wilt verwijderen?</string>
     <string name="yes">Ja</string>
-    <string name="no_email_detected">Geen email app gevonden</string>
     <string name="no_browser_detected">Geen browser gevonden</string>
-    <string name="open_issue">Open een melding</string>
     <string name="incorrect_pin">Foutieve Pin</string>
     <string name="pin_created">Pin aangemaakt</string>
     <string name="enter_pin">Vul PIN in</string>
@@ -90,7 +84,6 @@
     <string name="wildcards_active">Wildcards actief</string>
     <string name="use_root_shell_for_wifi">Gebruik root shell om wifi naam te bepalen, zodat locatie toestemmingen niet nodig zijn</string>
     <string name="monitoring_state_changes">Monitor statuswijzigingen</string>
-    <string name="donate">Doneer aan project</string>
     <string name="local_logging">Lokale logboeken bekijken</string>
     <string name="add_from_clipboard">Toevoegen van klembord</string>
     <string name="stop_on_no_internet">Stoppen wanneer geen internet</string>
@@ -119,8 +112,6 @@
     <string name="save">Bewaar</string>
     <string name="search">Zoek</string>
     <string name="select">Selecteer</string>
-    <string name="join_telegram">Suit je aan bij de Telegram gemeenschap</string>
-    <string name="join_matrix">Sluit je aan bij de Matrix gemeenschap</string>
     <string name="dropdown">Keuzelijst</string>
     <string name="add_tunnel">Voeg tunnel toe</string>
     <string name="export_logs">Exporteer bewaarde logs</string>
@@ -206,13 +197,6 @@
     <string name="ddns_auto_update">Dynamic DNS auto-update</string>
     <string name="ddns_auto_update_description">Auto-updates IP on DDNS changes</string>
     <string name="mode_disabled_template">Deze functie is niet beschikbaar in %1$s modus.</string>
-    <string name="donate_title">Doneer</string>
-    <string name="crypto">Cryptocurrency adressen</string>
-    <string name="donation_thanks_intro">Hartelijk dank dat u overweegt om aan dit project te doneren!</string>
-    <string name="donation_dev_message">Als de enige ontwikkelaar werk ik er onvermoeibaar aan om van WG Tunnel de beste gratis en open-source WireGuard-client voor Android te maken, maar dit is alleen mogelijk met jouw steun.</string>
-    <string name="donation_closing">Het is mijn droom om fulltime voor u aan dit project te werken.</string>
-    <string name="donation_signoff">Hartelijk bedankt,</string>
-    <string name="google_donation_message">Helaas zijn donatie links vanwege het beleid van Google niet toegestaan in de Play Store-versie van deze app. Gelieve op de webpagina’s van het project te kijken om te zien waar je kunt doneren.</string>
     <string name="delete_active_message">Actieve tunnel kan niet worden verwijderd.</string>
     <string name="back">Terug</string>
     <string name="configuration">Configuratie</string>
@@ -248,13 +232,6 @@
     <string name="save_changes">Wijzigingen opslaan</string>
     <string name="restart_message_template">Als u de wijzigingen opslaat, wordt %1$s opnieuw opgestart. Wilt u doorgaan?</string>
     <string name="_continue">Verdergaan</string>
-    <string name="translation">Vertaling</string>
-    <string name="help_translate">Help de app te vertalen</string>
-    <string name="already_donated">Al gedoneerd</string>
-    <string name="already_donated_description">Schakelt toekomstige donatieverzoeken uit</string>
-    <string name="donation_prompt_prefix">Bedankt voor het gebruik van WG Tunnel! Als het je lukt, overweeg dan alstublieft</string>
-    <string name="donation_prompt_link">het project ondersteunen</string>
-    <string name="donation_prompt_suffix">om het gratis te houden en te blijven verbeteren.</string>
     <!-- AmneziaWG 3.0 -->
     <!-- Tunnel states -->
     <!-- Notification formatting -->

@@ -51,7 +51,7 @@ class DatabaseBackup(
 ) {
     fun newBackupFileName(): String {
         val stamp = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss", Locale.US).format(Date())
-        return "wgtunnel-backup-$stamp.zip"
+        return "transwarp-backup-$stamp.zip"
     }
 
     suspend fun backupTo(uri: Uri?, password: String?): BackupWriteResult =
@@ -130,7 +130,7 @@ class DatabaseBackup(
     private fun snapshotDatabase(): File {
         val dbFile = context.getDatabasePath(context.getString(R.string.db_name))
         val sqlite = database.openHelper.writableDatabase
-        val snapshot = File.createTempFile("wgtunnel-backup-", ".sqlite3", context.cacheDir)
+        val snapshot = File.createTempFile("transwarp-backup-", ".sqlite3", context.cacheDir)
         runCatching { sqlite.query("PRAGMA wal_checkpoint(FULL)").use { it.moveToFirst() } }
         sqlite.beginTransaction()
         try {

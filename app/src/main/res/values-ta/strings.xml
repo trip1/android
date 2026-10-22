@@ -43,10 +43,6 @@
     <string name="cancel">ரத்துசெய்</string>
     <string name="unknown_error">தெரியாத பிழை ஏற்பட்டது</string>
     <string name="tunnel_on_wifi">நம்பத்தகாத வைஃபை மீது சுரங்கப்பாதை</string>
-    <string name="email_subject">WG சுரங்கப்பாதை உதவி</string>
-    <string name="email_chooser">மின்னஞ்சல் அனுப்புங்கள்…</string>
-    <string name="docs_description">ஆவணத்தைப் படியுங்கள்</string>
-    <string name="email_description">எனக்கு மின்னஞ்சல் அனுப்புங்கள்</string>
     <string name="error_ssid_exists">SSID ஏற்கனவே உள்ளது</string>
     <string name="error_root_denied">ரூட் செல் மறுக்கப்பட்டது</string>
     <string name="error_no_file_explorer">கோப்பு எக்ச்ப்ளோரர் நிறுவப்படவில்லை</string>
@@ -54,9 +50,7 @@
     <string name="delete_tunnel">சுரங்கப்பாதையை நீக்கு</string>
     <string name="delete_tunnel_message">இந்த சுரங்கப்பாதையை நீக்க விரும்புகிறீர்களா?</string>
     <string name="yes">ஆம்</string>
-    <string name="no_email_detected">மின்னஞ்சல் பயன்பாடு எதுவும் கண்டறியப்படவில்லை</string>
     <string name="no_browser_detected">உலாவி கண்டறியப்படவில்லை</string>
-    <string name="open_issue">ஒரு சிக்கலைத் திறக்கவும்</string>
     <string name="auto">(ஆட்டோ)</string>
     <string name="incorrect_pin">முள் தவறானது</string>
     <string name="pin_created">முள் வெற்றிகரமாக உருவாக்கப்பட்டது</string>
@@ -104,7 +98,6 @@
     <string name="start_auto">ஆட்டோ-டன்னல் தொடங்கவும்</string>
     <string name="stop_auto">ஆட்டோ-டன்னல் நிறுத்தவும்</string>
     <string name="monitoring_state_changes">மாநில மாற்றங்களை கண்காணித்தல்</string>
-    <string name="donate">திட்டத்திற்கு நன்கொடை</string>
     <string name="local_logging">உள்ளூர்வாசிகள்</string>
     <string name="add_from_clipboard">கிளிப்போர்டில் இருந்து சேர்க்கவும்</string>
     <string name="stop_on_no_internet">இணையத்தில் நிறுத்துங்கள்</string>
@@ -135,8 +128,6 @@
     <string name="save">சேமி</string>
     <string name="search">தேடல்</string>
     <string name="select">தேர்ந்தெடு</string>
-    <string name="join_telegram">தந்தி சமூகத்தில் சேரவும்</string>
-    <string name="join_matrix">மேட்ரிக்ச் சமூகத்தில் சேரவும்</string>
     <string name="dropdown">கீழ்தோன்றும்</string>
     <string name="add_tunnel">சுரங்கப்பாதை சேர்க்கவும்</string>
     <string name="export_logs">சேமிக்கப்பட்ட பதிவுகளை ஏற்றுமதி செய்யுங்கள்</string>

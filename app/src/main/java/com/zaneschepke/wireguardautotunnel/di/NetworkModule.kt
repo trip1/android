@@ -34,7 +34,7 @@ val networkModule = lazyModule {
     singleOf(::KtorGitHubApi) bind GitHubApi::class
 
     single<UpdateRepository> {
-        GitHubUpdateRepository(get(), "wgtunnel", "android", get(named(Dispatcher.IO)))
+        GitHubUpdateRepository(get(), "trip1", "android", get(named(Dispatcher.IO)))
     }
 
     single<UpdateDownloader> {

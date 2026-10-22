@@ -142,10 +142,6 @@ sealed class Route : NavKey {
 
     @Keep @Serializable data object LocationDisclosure : Route()
 
-    @Keep @Serializable data object Donate : Route()
-
-    @Keep @Serializable data object Addresses : Route()
-
     @Keep
     @Serializable
     data class PreferredTunnel(val tunnelNetwork: TunnelNetwork) : Route(), SecureRoute {
@@ -218,9 +214,7 @@ enum class Tab(
                 Route.TunnelRecovery,
                 Route.Logs -> SETTINGS
                 is Route.Support,
-                Route.License,
-                Route.Donate,
-                Route.Addresses -> SUPPORT
+                Route.License -> SUPPORT
             }
     }
 }

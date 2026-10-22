@@ -371,7 +371,7 @@ class DownloadManagerUpdateDownloader(
                     DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
                 }
             )
-            addRequestHeader("User-Agent", "wgtunnel/${BuildConfig.VERSION_NAME} (Android)")
+            addRequestHeader("User-Agent", "transwarp/${BuildConfig.VERSION_NAME} (Android)")
         }
 
     // Only for a download that is finished with, so the next one starts clean

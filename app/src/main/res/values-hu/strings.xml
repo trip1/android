@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_permission_title">WG Tunnel Vezérlő Híd.</string>
-    <string name="app_permission_description">WG Tunnel Vezérlő Híd.</string>
+    <string name="app_permission_title">Transwarp Vezérlő Híd.</string>
+    <string name="app_permission_description">Transwarp Vezérlő Híd.</string>
     <string name="error_file_extension">A fájl nem .conf vagy .zip</string>
     <string name="tunnels">Alagutak</string>
     <string name="tunnel_mobile_data">Alagút mobiladat-forgalmon</string>
@@ -10,7 +10,7 @@
     <string name="tunnel_on_ethernet">Alagút Etherneten</string>
     <string name="prominent_background_location_message">Ehhez a funkcióhoz háttérben történő helymeghatározási engedély szükséges a Wi-Fi SSID figyeléséhez akkor is, ha az alkalmazás be van zárva. További részletekért tekintse meg az Adatvédelmi nyilatkozatot a Támogatás képernyőn.</string>
     <string name="prominent_background_location_title">Háttérben történő helymeghatározás tájékoztató</string>
-    <string name="thank_you">Köszönjük, hogy a WG Tunnelt használja!</string>
+    <string name="thank_you">Köszönjük, hogy a Transwarpt használja!</string>
     <string name="trusted_ssid_value_description">SSID beküldése</string>
     <string name="add_tunnels_text">Hozzáadás fájlból vagy zip-ből</string>
     <string name="add_from_qr">Hozzáadás QR-kódból</string>
@@ -43,10 +43,6 @@
     <string name="cancel">Mégse</string>
     <string name="unknown_error">Ismeretlen hiba történt</string>
     <string name="tunnel_on_wifi">Alagút Wi-Fi-n</string>
-    <string name="email_subject">WG Tunnel támogatás</string>
-    <string name="email_chooser">E-mail küldése…</string>
-    <string name="docs_description">Dokumentáció elolvasása</string>
-    <string name="email_description">E-mail küldése nekem</string>
     <string name="error_ssid_exists">Az SSID már létezik</string>
     <string name="error_root_denied">Root hozzáférés megtagadva</string>
     <string name="error_no_file_explorer">Nincs fájlkezelő telepítve</string>
@@ -54,9 +50,7 @@
     <string name="delete_tunnel">Alagút törlése</string>
     <string name="delete_tunnel_message">Biztosan törölni szeretné a kijelölt alagutakat?</string>
     <string name="yes">Igen</string>
-    <string name="no_email_detected">Nem található e-mail alkalmazás</string>
     <string name="no_browser_detected">Nem található böngésző</string>
-    <string name="open_issue">Hiba jelentése (Issue nyitása)</string>
     <string name="incorrect_pin">A PIN-kód helytelen</string>
     <string name="pin_created">PIN-kód sikeresen létrehozva</string>
     <string name="enter_pin">PIN-kód megadása</string>
@@ -103,7 +97,6 @@
     <string name="start_auto">Auto-alagút indítása</string>
     <string name="stop_auto">Auto-alagút leállítása</string>
     <string name="monitoring_state_changes">Állapotváltozások figyelése</string>
-    <string name="donate">Támogasd a projektet</string>
     <string name="local_logging">Helyi naplófigyelő</string>
     <string name="add_from_clipboard">Hozzáadás vágólapról</string>
     <string name="stop_on_no_internet">Leállítás, ha nincs internet</string>
@@ -134,8 +127,6 @@
     <string name="save">Mentés</string>
     <string name="search">Keresés</string>
     <string name="select">Kiválasztás</string>
-    <string name="join_telegram">Csatlakozás a Telegram közösséghez</string>
-    <string name="join_matrix">Csatlakozás a Matrix közösséghez</string>
     <string name="dropdown">Legördülő menü</string>
     <string name="add_tunnel">Alagút hozzáadása</string>
     <string name="export_logs">Tárolt naplók exportálása</string>
@@ -230,21 +221,11 @@
     <string name="ddns_auto_update_description">IP automatikus frissítése DDNS változáskor</string>
     <string name="mode_disabled_template">A funkció nem érhető el %1$s módban.</string>
     <string name="lockdown">Lezárás</string>
-    <string name="donate_title">Adományozás</string>
-    <string name="crypto">Kriptovaluta címek</string>
-    <string name="github_sponsors">GitHub támogatók</string>
-    <string name="donation_thanks_intro">Köszönöm, hogy fontolóra veszi a projekt támogatását!</string>
-    <string name="donation_dev_message">Egyedüli fejlesztőként fáradhatatlanul dolgozom azon, hogy a WG Tunnel a legjobb ingyenes és nyílt forráskódú WireGuard kliens legyen Androidra, de ez csak az Ön támogatásával lehetséges.</string>
-    <string name="donation_closing">Minden álmom, hogy teljes munkaidőben ezen a projekten dolgozhassak.</string>
-    <string name="donation_signoff">Hálával,</string>
-    <string name="google_donation_message">Sajnos a Google irányelvei miatt az adományozási linkek nem engedélyezettek az alkalmazás Play Áruházas verziójában. Kérjük, látogasson el a projekt weboldalaira az adományozáshoz.</string>
     <string name="delete_active_message">Aktív alagút nem törölhető.</string>
     <string name="back">Vissza</string>
     <string name="configuration">Konfiguráció</string>
     <string name="about">Névjegy</string>
     <string name="resources">Erőforrások</string>
-    <string name="website">App weboldala</string>
-    <string name="contact">Kapcsolat</string>
     <string name="review">Értékelés</string>
     <string name="other">Egyéb</string>
     <string name="options">Opciók</string>
@@ -280,14 +261,7 @@
     <string name="restart_message_template">A módosítások mentése a(z) %1$s újraindulását okozza. Szeretné folytatni?</string>
     <string name="_continue">Folytatás</string>
     <string name="kill_switch">vészleállító</string>
-    <string name="translation">Fordítás</string>
-    <string name="help_translate">Segíts az app fordításában</string>
     <string name="info">Infó</string>
-    <string name="already_donated">Már adományoztam</string>
-    <string name="already_donated_description">Kikapcsolja a jövőbeli adományozási felhívásokat</string>
-    <string name="donation_prompt_prefix">Köszönjük, hogy a WG Tunnelt használja! Ha teheti, kérjük, fontolja meg a</string>
-    <string name="donation_prompt_link">a projekt támogatását</string>
-    <string name="donation_prompt_suffix">hogy az app ingyenes maradhasson és tovább fejlődjön.</string>
     <string name="cookie_packet_junk_size">Süti (cookie) csomag szemétmérete</string>
     <string name="transport_packet_junk_size">Transzport csomag szemétmérete</string>
     <!-- AmneziaWG 3.0 -->

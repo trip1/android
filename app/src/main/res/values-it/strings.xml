@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_permission_title">Ponte di controllo WG Tunnel</string>
+    <string name="app_permission_title">Ponte di controllo Transwarp</string>
     <string name="app_permission_description">Controllo tunnel e funzionalità automatiche.</string>
     <string name="error_file_extension">Il file non è di tipo \".conf\" o \".zip\"</string>
     <string name="tunnels">Tunnel</string>
@@ -10,7 +10,7 @@
     <string name="tunnel_on_ethernet">Tunnel su ethernet</string>
     <string name="prominent_background_location_message">Questa caratteristica richiede il permesso di localizzazione in background per abilitare il monitoraggio dell\'SSID delle reti Wi-fi anche quando l\'applicazione è chiusa. Per maggiori dettagli, consultare il link alla Privacy Policy presente nella schermata \"Supporto\".</string>
     <string name="prominent_background_location_title">Permesso localizzazione in background</string>
-    <string name="thank_you">Ti ringrazio per aver scelto di utilizzare WG Tunnel!</string>
+    <string name="thank_you">Ti ringrazio per aver scelto di utilizzare Transwarp!</string>
     <string name="trusted_ssid_value_description">Invia SSID</string>
     <string name="add_tunnels_text">Importa da file o zip</string>
     <string name="add_from_qr">Scansiona QR code</string>
@@ -43,10 +43,6 @@
     <string name="cancel">Annulla</string>
     <string name="unknown_error">Errore sconosciuto</string>
     <string name="tunnel_on_wifi">Tunnel su reti WiFi</string>
-    <string name="email_subject">Supporto di Tunnel WG</string>
-    <string name="email_chooser">Invia una email…</string>
-    <string name="docs_description">Leggi la documentazione</string>
-    <string name="email_description">Inviami una email (in inglese)</string>
     <string name="error_ssid_exists">L\'SSID esiste già</string>
     <string name="error_root_denied">Shell di root negata</string>
     <string name="error_no_file_explorer">Nessun gestore file installato</string>
@@ -54,9 +50,7 @@
     <string name="delete_tunnel">Cancella tunnel</string>
     <string name="delete_tunnel_message">Confermi di voler rimuovere i tunnel selezionati?</string>
     <string name="yes">Si</string>
-    <string name="no_email_detected">Nessuna app email rilevata</string>
     <string name="no_browser_detected">Nessun browser rilevato</string>
-    <string name="open_issue">Segnala un bug o un\'anomalia</string>
     <string name="auto">(automatico)</string>
     <string name="incorrect_pin">Il PIN non è corretto</string>
     <string name="pin_created">PIN correttamente creato</string>
@@ -110,7 +104,6 @@
     <string name="start_auto">Avvia tunnel automatico</string>
     <string name="stop_auto">Ferma tunnel automatico</string>
     <string name="monitoring_state_changes">Monitora i cambi di stato</string>
-    <string name="donate">Dona al progetto</string>
     <string name="local_logging">Monitor di log locali</string>
     <string name="add_from_clipboard">Importa dagli appunti</string>
     <string name="stop_on_no_internet">Arresta in assenza di connessione internet</string>
@@ -142,8 +135,6 @@
     <string name="save">Salva</string>
     <string name="search">Cerca</string>
     <string name="select">Seleziona</string>
-    <string name="join_telegram">Unisciti alla comunità Telegram</string>
-    <string name="join_matrix">Unisciti alla comunità Matrix</string>
     <string name="dropdown">A discesa</string>
     <string name="add_tunnel">Aggiungi tunnel</string>
     <string name="export_logs">Esporta i log salvati</string>
@@ -268,24 +259,12 @@
     <string name="ddns_auto_update_description">Aggiornamenti automatici dell\'IP in caso di modifiche DDNS</string>
     <string name="mode_disabled_template">Opzione non disponibile nella modalità %1$s.</string>
     <string name="lockdown">Lockdown</string>
-    <string name="donate_title">Donazioni</string>
-    <string name="crypto">Indirizzi di criptovaluta</string>
-    <string name="github_sponsors">Sponsor GitHub</string>
-    <string name="liberapay">Liberapay</string>
-    <string name="kofi">Ko-fi</string>
-    <string name="donation_thanks_intro">Ti ringrazio per aver preso in considerazione di contribuire con una donazione a questo progetto!</string>
-    <string name="donation_dev_message">Quale unico sviluppatore, lavoro senza sosta per rendere WG Tunnel il miglior client Wireguard per Android, gratuito e open-source, ma ciò è possibile solo con un supporto da parte tua.</string>
-    <string name="donation_closing">Il mio sogno è poter lavorare per te, a tempo pieno, a questo progetto.</string>
-    <string name="donation_signoff">Grazie di cuore,</string>
-    <string name="google_donation_message">Purtroppo, a causa delle politiche di Google, i link per le donazioni non sono consentiti nella versione Play Store di questa app. Si prega di consultare le pagine web del progetto per trovare dove effettuare le donazioni.</string>
     <string name="delete_active_message">Impossibile eliminare un tunnel attivo.</string>
     <string name="back">Indietro</string>
     <string name="configuration">Configurazione</string>
     <string name="kernel_wireguard_unsupported">Il kernel non include il supporto a WireGuard (modulo mancante o non integrato nel kernel)!</string>
     <string name="about">Informazioni</string>
     <string name="resources">Risorse</string>
-    <string name="website">Sito web dell\'app</string>
-    <string name="contact">Contatti</string>
     <string name="review">Valuta l\'app</string>
     <string name="other">Altro</string>
     <string name="options">Opzioni</string>
@@ -327,16 +306,7 @@
     <string name="save_and_restart">Salva e riavvia</string>
     <string name="_continue">Continua</string>
     <string name="kill_switch">kill switch</string>
-    <string name="translation">Traduzione</string>
-    <string name="help_translate">Aiuta a tradurre l\'app</string>
     <string name="info">Info</string>
-    <string name="already_donated">Già donato</string>
-    <string name="already_donated_description">Disattiva le richieste di donazioni future</string>
-    <string name="donation_prompt_prefix">Grazie per aver usato WG Tunnel! Se siete in grado, si prega di considerare</string>
-    <string name="donation_prompt_link">sostenere il progetto</string>
-    <string name="donation_prompt_suffix">per mantenerlo gratuito e migliorarlo.</string>
-    <string name="desktop_prompt_message">WG Tunnel ora è disponibile anche su desktop!</string>
-    <string name="desktop_app">App desktop</string>
     <string name="cookie_packet_junk_size">Dimensione dati fittizi del pacchetto cookie</string>
     <string name="transport_packet_junk_size">Dimensione dati fittizi del pacchetto di trasporto</string>
     <string name="special_junk_packet">Pacchetto fittizio speciale</string>
@@ -444,8 +414,6 @@
     <string name="restore_ipv6">Ripristina IPv6</string>
     <string name="restore_ipv6_desc">Prova a ripristinare gli endpoint IPv6 quando il tunnel funziona bene su una rete che supporta IPv6</string>
     <string name="no_tunnels_yet">Qui non c\'è niente… per ora.</string>
-    <string name="getting_started_guidance">Usa il pulsante + per importare un tunnel, oppure consulta la guida introduttiva.</string>
-    <string name="getting_started_guide_link">consulta la guida introduttiva</string>
     <string name="metered_tunnel_desc">Segna questo tunnel come a consumo, così le app lo trattano come i dati mobili</string>
     <string name="local_proxy">Proxy locale</string>
     <string name="local_proxy_desc">Esponi il tunnel come proxy SOCKS5/HTTP locale</string>
@@ -475,7 +443,7 @@
     <string name="restore_failed_invalid_file">Ripristino non riuscito. Seleziona un file di backup valido (.sqlite3 o .sqlite3.aes)</string>
     <string name="error_invalid_config_url">Questo link ha restituito un file di configurazione non valido. Assicurati di usare un link di download diretto</string>
     <string name="local_network_permission_title">Serve l\'accesso alla rete locale</string>
-    <string name="local_network_permission_intro">WG Tunnel ha bisogno dell\'accesso alla rete locale perché diverse funzionalità operino correttamente.</string>
+    <string name="local_network_permission_intro">Transwarp ha bisogno dell\'accesso alla rete locale perché diverse funzionalità operino correttamente.</string>
     <string name="local_network_permission_issues_intro">Senza questo permesso potresti avere problemi con:</string>
     <string name="local_network_permission_feature_tunnels">- La connessione con lo split tunneling, il bypass della LAN o i server della tua rete locale</string>
     <string name="local_network_permission_feature_autotunnel">- Le funzioni di tunnel automatico e split tunneling</string>

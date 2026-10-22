@@ -33,8 +33,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.zaneschepke.wireguardautotunnel.R
@@ -150,19 +148,7 @@ fun AndroidIntegrationsScreen(viewModel: SettingsViewModel = koinViewModel()) {
                     )
                 },
                 title = stringResource(R.string.remote_control),
-                description = {
-                    val descriptionText = stringResource(R.string.remote_control_desc)
-                    val learnMoreText = stringResource(R.string.learn_more)
-                    val url = stringResource(R.string.docs_remote_control)
-                    val annotatedString = buildAnnotatedString {
-                        append(descriptionText)
-                        append(" ")
-                        val start = length
-                        append(learnMoreText)
-                        addLink(LinkAnnotation.Url(url), start, length)
-                    }
-                    DescriptionText(annotatedString)
-                },
+                description = { DescriptionText(stringResource(R.string.remote_control_desc)) },
                 onClick = { viewModel.setRemoteEnabled(!settingsState.isRemoteEnabled) },
             )
             AnimatedVisibility(settingsState.isRemoteEnabled) {

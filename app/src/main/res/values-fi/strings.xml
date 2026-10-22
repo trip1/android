@@ -5,7 +5,7 @@
     <string name="privacy_policy">Näytä tietosuojakäytäntö</string>
     <string name="okay">Okei</string>
     <string name="prominent_background_location_message">Tämä toiminto vaatii taustapaikannusoikeuden, jotta Wi-Fi SSID:n seuranta on mahdollista myös sovelluksen ollessa suljettuna. Lisätietoja löydät Tuki-näkymään linkatusta tietosuojakäytännöstä.</string>
-    <string name="thank_you">Kiitos WG Tunnelin käyttämisestä!</string>
+    <string name="thank_you">Kiitos Transwarpin käyttämisestä!</string>
     <string name="trusted_ssid_value_description">Tallenna SSID</string>
     <string name="add_tunnels_text">Lisää tiedostosta tai zip-arkistosta</string>
     <string name="add_from_qr">Lisää QR-koodilla</string>
@@ -31,19 +31,13 @@
     <string name="cancel">Peruuta</string>
     <string name="unknown_error">Tapahtui tuntematon virhe</string>
     <string name="tunnel_on_wifi">Tunneloi epäluotettavilla wifi-yhteyksillä</string>
-    <string name="email_subject">WG Tunnel-tuki</string>
-    <string name="email_chooser">Lähetä sähköposti…</string>
-    <string name="docs_description">Lue dokumentaatio</string>
-    <string name="email_description">Lähetä minulle sähköpostia</string>
     <string name="error_ssid_exists">SSID on jo luettelossa</string>
     <string name="error_no_file_explorer">Tiedostonhallintasovellusta ei ole asennettuna</string>
     <string name="auto_tunnel_title">Automaattinen tunnelointipalvelu</string>
     <string name="delete_tunnel">Poista tunneli</string>
     <string name="delete_tunnel_message">Haluatko varmasti poistaa tämän tunnelin?</string>
     <string name="yes">Kyllä</string>
-    <string name="no_email_detected">Sähköpostisovellusta ei tunnistettu</string>
     <string name="no_browser_detected">Selainta ei tunnistettu</string>
-    <string name="open_issue">Raportoi ongelmasta</string>
     <string name="auto">(auto)</string>
     <string name="incorrect_pin">Pin on virheellinen</string>
     <string name="pin_created">Pin luotu</string>
@@ -80,7 +74,6 @@
     <string name="wildcards_active">Jokerimerkit aktivoitu</string>
     <string name="start_auto">Käynnistä automaattinen tunnelointi</string>
     <string name="stop_auto">Kytke automaattinen tunnelointi pois päältä</string>
-    <string name="donate">Lahjoita projektille</string>
     <string name="add_from_clipboard">Lisää leikepöydältä</string>
     <string name="allow_lan_traffic">Salli LAN-tietoliikenne</string>
     <string name="vpn_channel_description">Kanava VPN-tilan ilmoituksille</string>

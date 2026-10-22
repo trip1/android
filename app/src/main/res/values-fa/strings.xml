@@ -42,10 +42,6 @@
     <string name="cancel">لغو </string>
     <string name="unknown_error">خطای ناشناخته‌ای رخ داد </string>
     <string name="tunnel_on_wifi">تونل زدن روی وای فای </string>
-    <string name="email_subject">پشتیبانی WG تونل</string>
-    <string name="email_chooser">ارسال ایمیل… </string>
-    <string name="docs_description">مستندات را بخوانید </string>
-    <string name="email_description">برای من ایمیل بفرست </string>
     <string name="error_ssid_exists">SSID از قبل وجود دارد </string>
     <string name="error_root_denied">پوسته ریشه رد شد </string>
     <string name="error_no_file_explorer">هیچ فایل اکسپلورری نصب نشده است </string>
@@ -53,9 +49,7 @@
     <string name="delete_tunnel">حذف تونل </string>
     <string name="delete_tunnel_message">آیا مطمئن هستید که می‌خواهید تونل‌های انتخاب‌شده را حذف کنید؟ </string>
     <string name="yes">بله</string>
-    <string name="no_email_detected">هیچ برنامه ایمیلی شناسایی نشد </string>
     <string name="no_browser_detected">هیچ مرورگری شناسایی نشد </string>
-    <string name="open_issue">یک مسئله را باز کنید </string>
     <string name="auto">(خودکار) </string>
     <string name="incorrect_pin">پین اشتباه است </string>
     <string name="pin_created">پین با موفقیت ایجاد شد </string>
@@ -98,7 +92,6 @@
     <string name="use_root_shell_for_wifi">برای دریافت اطلاعات وای‌فای از یک پوسته روت استفاده کنید و از نیاز به مجوزهای موقعیت مکانی جلوگیری کنید</string>
     <string name="start_auto">شروع تونل خودکار </string>
     <string name="monitoring_state_changes">نظارت بر تغییرات وضعیت </string>
-    <string name="donate">به پروژه کمک مالی کنید </string>
     <string name="local_logging">ثبت وقایع محلی </string>
     <string name="add_from_clipboard">اضافه کردن از کلیپ بورد </string>
     <string name="stop_on_no_internet">توقف در صورت عدم اتصال به شبکه </string>
@@ -127,8 +120,6 @@
     <string name="save">ذخیره </string>
     <string name="search">جستجو</string>
     <string name="select">انتخاب کنید </string>
-    <string name="join_telegram">به انجمن تلگرام بپیوندید</string>
-    <string name="join_matrix">به انجمن ماتریکس بپیوندید</string>
     <string name="dropdown">منوی کشویی</string>
     <string name="add_tunnel">تونل اضافه کنید </string>
     <string name="export_logs">خروجی گرفتن از لاگ‌های ذخیره شده </string>
@@ -221,24 +212,12 @@
     <string name="ddns_auto_update_description">به‌روزرسانی خودکار نقطه پایانی سرور هنگام تغییر IP آن</string>
     <string name="mode_disabled_template">این ویژگی در حالت %1$s در دسترس نیست.</string>
     <string name="lockdown">تعطیلی </string>
-    <string name="donate_title">اهدای مالی</string>
-    <string name="crypto">آدرس‌های ارز دیجیتال </string>
-    <string name="github_sponsors">حامیان مالی گیت‌هاب </string>
-    <string name="liberapay">لیبراپی </string>
-    <string name="kofi">قهوه</string>
-    <string name="donation_thanks_intro">از اینکه به فکر کمک مالی به این پروژه هستید، متشکریم!</string>
-    <string name="donation_dev_message">به عنوان تنها توسعه‌دهنده، من خستگی‌ناپذیر تلاش می‌کنم تا WG Tunnel را به بهترین کلاینت رایگان و متن‌باز WireGuard برای اندروید تبدیل کنم، اما این تنها با حمایت شما امکان‌پذیر است.</string>
-    <string name="donation_closing">رویای من این است که تمام وقت برای شما روی این پروژه کار کنم.</string>
-    <string name="donation_signoff">با سپاس، </string>
-    <string name="google_donation_message">متأسفانه، به دلیل سیاست‌های گوگل، لینک‌های کمک مالی در نسخه پلی استور این برنامه مجاز نیستند. لطفاً صفحات وب پروژه را مرور کنید تا محل کمک مالی را پیدا کنید.</string>
     <string name="delete_active_message">نمی‌توان تونل فعال را حذف کرد. </string>
     <string name="back">برگشت </string>
     <string name="configuration">پیکربندی</string>
     <string name="kernel_wireguard_unsupported">کرنل از WireGuard پشتیبانی نمی‌کند (ماژول آن وجود ندارد یا در کرنل تعبیه نشده است)!</string>
     <string name="about">درباره</string>
     <string name="resources">منابع</string>
-    <string name="website">وب‌سایت نرم‌افزار</string>
-    <string name="contact">تماس با ما</string>
     <string name="review">امتیازدهی به برنامه </string>
     <string name="other">غیره</string>
     <string name="options">گزینه‌ها </string>
@@ -276,7 +255,6 @@
     <!-- Notification formatting -->
     <!-- Informational notifications -->
     <!-- Errors -->
-    <string name="getting_started_guidance">برای وارد کردن یک تونل یا مشاهده راهنمای شروع به کار، از دکمه + استفاده کنید.</string>
     <string name="restore_failed_invalid_file">بازیابی ناموفق بود. یک فایل پشتیبان معتبر انتخاب کنید (.sqlite3 یا sqlite3.aes)</string>
     <string name="wildcard_wifi_desc">پشتیبانی از *، ؟ و ! برای قرار دادن در لیست سیاه</string>
     <string name="network_name_in_use">این نام یا الگوی شبکه قبلاً استفاده شده است</string>
