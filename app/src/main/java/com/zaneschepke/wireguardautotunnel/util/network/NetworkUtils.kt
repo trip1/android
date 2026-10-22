@@ -87,3 +87,7 @@ class NetworkUtils(private val ioDispatcher: CoroutineDispatcher) {
         }
     }
 }
+
+/** First AllowedIPs entry without its prefix length: the peer's own mesh address. */
+fun firstAllowedHost(allowedIPs: String?): String? =
+    allowedIPs?.split(',')?.firstOrNull()?.trim()?.substringBefore('/')?.takeIf { it.isNotEmpty() }
