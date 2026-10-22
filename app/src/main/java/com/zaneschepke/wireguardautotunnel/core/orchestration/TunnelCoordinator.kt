@@ -265,7 +265,7 @@ class TunnelCoordinator(
         val monitoringSettings = snapshot.monitoring
         val lockdownSettings = snapshot.lockdown
 
-        var config = tunnelConfig.getConfig()
+        var config = tunnelConfig.getRunConfig()
 
         // makes sure Amnezia configs are 2.0 compatible
         config = AmneziaConfigNormalizer.ensureAmneziaCompatibility(config)

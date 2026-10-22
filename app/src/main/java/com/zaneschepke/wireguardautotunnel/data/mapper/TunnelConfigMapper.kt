@@ -21,6 +21,7 @@ fun Entity.toDomain(): Domain =
         isDDNSTunnel = isDDNSTunnel,
         groupId = groupId,
         entryTunnelId = entryTunnelId,
+        isExitNode = isExitNode,
     )
 
 fun Domain.toEntity(): Entity =
@@ -41,4 +42,5 @@ fun Domain.toEntity(): Entity =
         isDDNSTunnel = isDDNSTunnel,
         groupId = groupId,
         entryTunnelId = entryTunnelId,
+        isExitNode = isExitNode,
     )

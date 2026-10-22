@@ -26,6 +26,7 @@ data class TunnelConfig(
     val isDDNSTunnel: Boolean = false,
     val groupId: Int? = null,
     val entryTunnelId: Int? = null,
+    val isExitNode: Boolean = false,
 ) {
 
     fun toSummary() = TunnelSummary(id = id, name = name)
@@ -33,6 +34,9 @@ data class TunnelConfig(
     fun getConfig(): Config {
         return Config.parseQuickString(quickConfig)
     }
+
+    /** Config handed to the backend: stored conf, routed through every peer when [isExitNode]. */
+    fun getRunConfig(): Config = getConfig().let { if (isExitNode) it.withFullTunnel() else it }
 
     val isGlobalConfig: Boolean
         get() = name == GLOBAL_CONFIG_NAME
@@ -117,3 +121,9 @@ data class TunnelConfig(
         }
     }
 }
+
+/** Full Warp: every peer carries all traffic. The stored conf is never rewritten. */
+fun Config.withFullTunnel(): Config =
+    copy(peers = peers.map { it.copy(allowedIPs = FULL_TUNNEL_ALLOWED_IPS) })
+
+const val FULL_TUNNEL_ALLOWED_IPS = "0.0.0.0/0, ::/0"

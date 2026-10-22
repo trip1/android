@@ -16,6 +16,7 @@ import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.TravelExplore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -147,6 +148,15 @@ fun TunnelSettingsScreen(
                     }
                 },
                 onClick = { navController.push(Route.SplitTunnel(id = tunnel.id)) },
+            )
+            SurfaceRow(
+                leading = { Icon(Icons.Outlined.TravelExplore, contentDescription = null) },
+                title = stringResource(R.string.full_warp),
+                description = { DescriptionText(stringResource(R.string.full_warp_desc)) },
+                trailing = {
+                    ThemedSwitch(tunnel.isExitNode, onClick = { viewModel.onExitNode(it) })
+                },
+                onClick = { viewModel.onExitNode(!tunnel.isExitNode) },
             )
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.Public, contentDescription = null) },

@@ -755,6 +755,8 @@
         <item quantity="one">Move %d tunnel</item>
         <item quantity="other">Move %d tunnels</item>
     </plurals>
+    <string name="full_warp">Full Warp (exit node)</string>
+    <string name="full_warp_desc">Route all traffic through this tunnel\'s peers (0.0.0.0/0, ::/0) without changing the saved config</string>
     <string name="socks5" translatable="false">SOCKS5</string>
     <string name="http" translatable="false">HTTP</string>
 </resources>
