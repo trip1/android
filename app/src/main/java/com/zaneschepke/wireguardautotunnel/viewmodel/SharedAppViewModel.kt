@@ -48,6 +48,7 @@ import com.zaneschepke.wireguardautotunnel.util.extensions.asFileExportName
 import com.zaneschepke.wireguardautotunnel.util.extensions.asStringValue
 import com.zaneschepke.wireguardautotunnel.util.extensions.isFileAccessDenied
 import com.zaneschepke.wireguardautotunnel.util.extensions.saveTunnelsUniquely
+import com.zaneschepke.wireguardautotunnel.util.network.MeshEnroll
 import com.zaneschepke.wireguardautotunnel.util.network.NetworkUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.request.prepareGet
@@ -660,10 +661,36 @@ class SharedAppViewModel(
     }
 
     fun importFromClipboard(conf: String) {
+        MeshEnroll.parseCode(conf)?.let {
+            enroll(it)
+            return
+        }
         importTunnelConfigs(mapOf(conf to null))
     }
 
     fun importFromQr(conf: String) = intent { importFromClipboard(conf) }
+
+    fun enroll(code: MeshEnroll.Code) = intent {
+        try {
+            val result = withContext(Dispatchers.IO) { MeshEnroll.enroll(code) }
+            Config.parseQuickString(result.config).validate()
+            importTunnelConfigs(mapOf(result.config to (result.name ?: "gofire-mesh")))
+            postSideEffect(
+                GlobalSideEffect.Snackbar(
+                    StringValue.StringResource(R.string.enroll_success),
+                    ToastType.Success,
+                )
+            )
+        } catch (e: Exception) {
+            Timber.e(e, "Mesh enrollment failed")
+            postSideEffect(
+                GlobalSideEffect.Snackbar(
+                    StringValue.StringResource(R.string.enroll_failed, e.message ?: ""),
+                    ToastType.Error,
+                )
+            )
+        }
+    }
 
     fun promptWgImport(url: String) = intent { reduce { state.copy(pendingWgImportUrl = url) } }
 

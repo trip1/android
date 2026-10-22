@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentPasteGo
 import androidx.compose.material.icons.outlined.Create
 import androidx.compose.material.icons.outlined.FileOpen
+import androidx.compose.material.icons.outlined.Hub
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.QrCode
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,6 +24,7 @@ fun TunnelImportSheet(
     onManualImportClick: () -> Unit,
     onClipboardClick: () -> Unit,
     onUrlClick: () -> Unit,
+    onEnrollClick: () -> Unit,
 ) {
     val isTv = LocalIsAndroidTV.current
 
@@ -66,6 +68,16 @@ fun TunnelImportSheet(
                     onClick = {
                         onDismiss()
                         onUrlClick()
+                    },
+                )
+            )
+            add(
+                SheetOption(
+                    Icons.Outlined.Hub,
+                    stringResource(R.string.enroll_with_code),
+                    onClick = {
+                        onDismiss()
+                        onEnrollClick()
                     },
                 )
             )

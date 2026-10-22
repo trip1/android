@@ -757,6 +757,11 @@
     </plurals>
     <string name="full_warp">Full Warp (exit node)</string>
     <string name="full_warp_desc">Route all traffic through this tunnel\'s peers (0.0.0.0/0, ::/0) without changing the saved config</string>
+    <string name="enroll_with_code">Enroll with code</string>
+    <string name="enroll_description">Starfleet Provisioning: paste the transwarp://enroll code from your mesh controller. A WireGuard key is generated on this device and never leaves it.</string>
+    <string name="enroll_code">Enrollment code</string>
+    <string name="enroll_success">Enrolled in mesh</string>
+    <string name="enroll_failed">Enrollment failed: %1$s</string>
     <string name="socks5" translatable="false">SOCKS5</string>
     <string name="http" translatable="false">HTTP</string>
 </resources>

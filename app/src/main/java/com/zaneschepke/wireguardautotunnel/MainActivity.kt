@@ -861,7 +861,9 @@ class MainActivity : AppCompatActivity() {
     private fun handleWgDeepLinkIntent(intent: Intent) {
         if (intent.action == Intent.ACTION_VIEW) {
             val uri = intent.data ?: return
-            if (uri.scheme == "wg") {
+            if (uri.scheme == "transwarp") {
+                viewModel.importFromClipboard(uri.toString())
+            } else if (uri.scheme == "wg") {
                 val httpsUrl = uri.toString().replaceFirst("wg://", "https://")
                 viewModel.promptWgImport(httpsUrl)
             }

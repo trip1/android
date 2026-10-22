@@ -30,6 +30,7 @@ import com.zaneschepke.wireguardautotunnel.ui.common.functions.rememberFileImpor
 import com.zaneschepke.wireguardautotunnel.ui.common.sheet.CustomBottomSheet
 import com.zaneschepke.wireguardautotunnel.ui.common.sheet.SheetOption
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route
+import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.EnrollDialog
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.GroupNameDialog
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.GroupSelectionSheet
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.SelectionActionsSheet
@@ -74,6 +75,7 @@ fun TunnelsScreen(sharedViewModel: SharedAppViewModel = koinActivityViewModel())
     var showImportSheet by rememberSaveable { mutableStateOf(false) }
     var showDeleteModal by rememberSaveable { mutableStateOf(false) }
     var showUrlDialog by rememberSaveable { mutableStateOf(false) }
+    var showEnrollDialog by rememberSaveable { mutableStateOf(false) }
     var showMoveToGroup by rememberSaveable { mutableStateOf(false) }
     var showSelectionActions by rememberSaveable { mutableStateOf(false) }
     var showReorderActions by rememberSaveable { mutableStateOf(false) }
@@ -220,6 +222,7 @@ fun TunnelsScreen(sharedViewModel: SharedAppViewModel = koinActivityViewModel())
             },
             onManualImportClick = { navController.push(Route.ConfigEdit(null)) },
             onUrlClick = { showUrlDialog = true },
+            onEnrollClick = { showEnrollDialog = true },
         )
     }
 
@@ -335,6 +338,16 @@ fun TunnelsScreen(sharedViewModel: SharedAppViewModel = koinActivityViewModel())
             onConfirm = { url ->
                 sharedViewModel.importFromUrl(url)
                 showUrlDialog = false
+            },
+        )
+    }
+
+    if (showEnrollDialog) {
+        EnrollDialog(
+            onDismiss = { showEnrollDialog = false },
+            onConfirm = { code ->
+                sharedViewModel.enroll(code)
+                showEnrollDialog = false
             },
         )
     }
