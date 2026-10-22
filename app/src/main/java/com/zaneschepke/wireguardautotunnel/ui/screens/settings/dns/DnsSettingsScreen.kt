@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.AltRoute
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.Hub
 import androidx.compose.material.icons.outlined.NetworkCheck
 import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Router
@@ -266,6 +267,12 @@ fun DnsSettingsScreen(
                     DescriptionText(uiState.dnsSettings.tunnelDnsMode.asString(context))
                 },
                 onClick = { showAppModeSheet = true },
+            )
+            SurfaceRow(
+                leading = { Icon(Icons.Outlined.Hub, contentDescription = null) },
+                title = stringResource(R.string.mesh_dns_preset),
+                description = { DescriptionText(stringResource(R.string.mesh_dns_preset_desc)) },
+                onClick = viewModel::applyMeshDnsPreset,
             )
             AnimatedVisibility(
                 uiState.dnsSettings.tunnelDnsMode in

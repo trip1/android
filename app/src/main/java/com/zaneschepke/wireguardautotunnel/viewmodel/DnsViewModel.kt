@@ -259,6 +259,24 @@ class DnsViewModel(
         reduce { state.copy(dnsSettings = state.dnsSettings.copy(foreignDnsPolicy = policy)) }
     }
 
+    /** Subspace MagicDNS: mesh suffixes resolved by the tunnel's own DNS. User still taps save. */
+    fun applyMeshDnsPreset() = intent {
+        reduce {
+            state.copy(
+                dnsSettings =
+                    state.dnsSettings.copy(
+                        tunnelDnsMode = TunnelDnsMode.Split,
+                        tunnelDnsProtocol = TunnelDnsProtocol.Plain,
+                        localSuffixes = "mesh, lab, gofire, home.arpa",
+                        splitSuffixTarget = SplitDnsSuffixTarget.Tunnel,
+                        useTunnelDnsServersInSplit = true,
+                    ),
+                tunnelEndpointError = null,
+                localSuffixesError = null,
+            )
+        }
+    }
+
     fun setSplitSuffixTarget(target: SplitDnsSuffixTarget) = intent {
         reduce { state.copy(dnsSettings = state.dnsSettings.copy(splitSuffixTarget = target)) }
     }

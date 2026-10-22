@@ -762,6 +762,8 @@
     <string name="enroll_code">Enrollment code</string>
     <string name="enroll_success">Enrolled in mesh</string>
     <string name="enroll_failed">Enrollment failed: %1$s</string>
+    <string name="mesh_dns_preset">Mesh DNS preset</string>
+    <string name="mesh_dns_preset_desc">Subspace MagicDNS: split DNS sending .mesh, .lab, .gofire and .home.arpa to the tunnel\'s DNS servers. Tap save to apply.</string>
     <string name="socks5" translatable="false">SOCKS5</string>
     <string name="http" translatable="false">HTTP</string>
 </resources>
