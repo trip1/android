@@ -5,11 +5,13 @@ import com.wgtunnel.parser.crypto.Key
 import java.net.URI
 import java.net.URL
 import java.net.URLDecoder
+import java.security.KeyStore
 import java.security.MessageDigest
 import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
@@ -47,17 +49,27 @@ object MeshEnroll {
         return lines.joinToString("\n")
     }
 
-    /** Trusts the server only if some cert in its chain has sha256(DER) == [caSha256]. Never trust-all. */
-    private class PinnedTrustManager(private val caSha256: String) : X509TrustManager {
+    fun sha256Hex(der: ByteArray): String =
+        MessageDigest.getInstance("SHA-256").digest(der).joinToString("") { "%02x".format(it) }
+
+    /**
+     * The chain is server-supplied, so merely containing the CA cert proves nothing (it's public). The cert
+     * matching the pin becomes the only PKIX trust anchor and the leaf must chain to it by signature.
+     */
+    internal class PinnedTrustManager(private val caSha256: String) : X509TrustManager {
         override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) =
             throw CertificateException("client auth unsupported")
 
         override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
-            val sha = MessageDigest.getInstance("SHA-256")
-            val ok = chain.orEmpty().any { c ->
-                sha.digest(c.encoded).joinToString("") { "%02x".format(it) }.equals(caSha256, true)
+            val ca =
+                chain.orEmpty().firstOrNull { sha256Hex(it.encoded).equals(caSha256, true) }
+                    ?: throw CertificateException("server CA does not match enrollment pin")
+            val ks = KeyStore.getInstance(KeyStore.getDefaultType()).apply {
+                load(null)
+                setCertificateEntry("ca", ca)
             }
-            if (!ok) throw CertificateException("server CA does not match enrollment pin")
+            val tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(ks) }
+            tmf.trustManagers.filterIsInstance<X509TrustManager>().first().checkServerTrusted(chain, authType)
         }
 
         override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
