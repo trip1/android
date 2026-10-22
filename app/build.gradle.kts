@@ -110,7 +110,7 @@ configure<ApplicationExtension> {
 
         debug {
             applicationIdSuffix = ".debug"
-            resValue("string", "app_name", "WG Tunnel Debug")
+            resValue("string", "app_name", "Transwarp Debug")
             isDebuggable = true
             manifestPlaceholders["providerAuthority"] = "${Constants.APP_NAME}.provider.debug"
             buildConfigField(
@@ -123,7 +123,7 @@ configure<ApplicationExtension> {
         create(Constants.NIGHTLY) {
             initWith(buildTypes.getByName(Constants.RELEASE))
             applicationIdSuffix = ".nightly"
-            resValue("string", "app_name", "WG Tunnel Nightly")
+            resValue("string", "app_name", "Transwarp Nightly")
             manifestPlaceholders["providerAuthority"] = "${Constants.APP_NAME}.provider.nightly"
             buildConfigField(
                 "String",

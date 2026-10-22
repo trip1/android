@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 41,
-    "identityHash": "6dd9904a0859f2288ac3af73ca1196f4",
+    "identityHash": "b31bec69c30686adce13432407f34156",
     "entities": [
       {
         "tableName": "tunnel_config",
@@ -276,7 +276,7 @@
       },
       {
         "tableName": "general_settings",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `is_shortcuts_enabled` INTEGER NOT NULL DEFAULT 0, `is_restore_on_boot_enabled` INTEGER NOT NULL DEFAULT 0, `is_multi_tunnel_enabled` INTEGER NOT NULL DEFAULT 0, `global_split_tunnel_enabled` INTEGER NOT NULL DEFAULT 0, `app_mode` INTEGER NOT NULL DEFAULT 0, `theme` TEXT NOT NULL DEFAULT 'AUTOMATIC', `locale` TEXT, `remote_key` TEXT, `is_remote_control_enabled` INTEGER NOT NULL DEFAULT 0, `is_pin_lock_enabled` INTEGER NOT NULL DEFAULT 0, `is_always_on_vpn_enabled` INTEGER NOT NULL DEFAULT 0, `already_donated` INTEGER NOT NULL DEFAULT 0, `screen_recording_security` INTEGER NOT NULL DEFAULT 1, `global_amnezia_enabled` INTEGER NOT NULL DEFAULT 0, `tunnel_scripting_enabled` INTEGER NOT NULL DEFAULT 0, `seamless_recovery` INTEGER NOT NULL DEFAULT 1, `seamless_recovery_bounce_delay_sec` INTEGER NOT NULL DEFAULT 30, `live_updates_enabled` INTEGER NOT NULL DEFAULT 0, `notification_show_origin` INTEGER NOT NULL DEFAULT 0, `notification_show_transfer` INTEGER NOT NULL DEFAULT 0, `notification_show_recovery` INTEGER NOT NULL DEFAULT 0, `notification_failure_tint` INTEGER NOT NULL DEFAULT 0)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `is_shortcuts_enabled` INTEGER NOT NULL DEFAULT 0, `is_restore_on_boot_enabled` INTEGER NOT NULL DEFAULT 0, `is_multi_tunnel_enabled` INTEGER NOT NULL DEFAULT 0, `global_split_tunnel_enabled` INTEGER NOT NULL DEFAULT 0, `app_mode` INTEGER NOT NULL DEFAULT 0, `theme` TEXT NOT NULL DEFAULT 'DARK', `locale` TEXT, `remote_key` TEXT, `is_remote_control_enabled` INTEGER NOT NULL DEFAULT 0, `is_pin_lock_enabled` INTEGER NOT NULL DEFAULT 0, `is_always_on_vpn_enabled` INTEGER NOT NULL DEFAULT 0, `already_donated` INTEGER NOT NULL DEFAULT 0, `screen_recording_security` INTEGER NOT NULL DEFAULT 1, `global_amnezia_enabled` INTEGER NOT NULL DEFAULT 0, `tunnel_scripting_enabled` INTEGER NOT NULL DEFAULT 0, `seamless_recovery` INTEGER NOT NULL DEFAULT 1, `seamless_recovery_bounce_delay_sec` INTEGER NOT NULL DEFAULT 30, `live_updates_enabled` INTEGER NOT NULL DEFAULT 0, `notification_show_origin` INTEGER NOT NULL DEFAULT 0, `notification_show_transfer` INTEGER NOT NULL DEFAULT 0, `notification_show_recovery` INTEGER NOT NULL DEFAULT 0, `notification_failure_tint` INTEGER NOT NULL DEFAULT 0)",
         "fields": [
           {
             "fieldPath": "id",
@@ -324,7 +324,7 @@
             "columnName": "theme",
             "affinity": "TEXT",
             "notNull": true,
-            "defaultValue": "'AUTOMATIC'"
+            "defaultValue": "'DARK'"
           },
           {
             "fieldPath": "locale",
@@ -707,7 +707,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6dd9904a0859f2288ac3af73ca1196f4')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'b31bec69c30686adce13432407f34156')"
     ]
   }
 }

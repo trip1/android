@@ -3,6 +3,7 @@ package com.zaneschepke.wireguardautotunnel.ui.common.button
 import android.view.KeyEvent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.indication
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
@@ -25,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
@@ -58,16 +61,32 @@ fun SurfaceRow(
     val mainFocusRequester = remember { FocusRequester() }
     val trailingFocusRequester = remember { FocusRequester() }
 
+    val lcarsShape =
+        RoundedCornerShape(
+            topStart = 18.dp,
+            bottomStart = 18.dp,
+            topEnd = 6.dp,
+            bottomEnd = 6.dp,
+        )
     Column(
         modifier =
             modifier
                 .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 2.dp)
+                .clip(lcarsShape)
+                .border(
+                    width = 1.dp,
+                    color =
+                        if (selected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.outline.copy(alpha = 0.28f),
+                    shape = lcarsShape,
+                )
                 .indication(interactionSource, ripple())
                 .background(
                     if (!selected) MaterialTheme.colorScheme.surface
-                    else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    else MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
                 )
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp, vertical = 10.dp)
                 .defaultMinSize(minHeight = 42.dp)
                 .animateContentSize(),
         verticalArrangement = Arrangement.Center,

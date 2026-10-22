@@ -2,28 +2,36 @@ package com.zaneschepke.wireguardautotunnel.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val OffWhite = Color(0xFFF2F2F4)
-val CoolGray = Color(0xFF8D9D9F)
+val OffWhite = Color(0xFFF3ECE1)
+val CoolGray = Color(0xFF99CCFF)
 val LightGrey = Color(0xFFECEDEF)
-val Aqua = Color(0xFF76BEBD)
-val Plantation = Color(0xFF2E3538)
-val Shark = Color(0xFF21272A)
-val BalticSea = Color(0xFF1C1B1F)
+val Aqua = Color(0xFFFF9C00)
+val Plantation = Color(0xFF1A2238)
+val Shark = Color(0xFF0E1322)
+val BalticSea = Color(0xFF060810)
+
+// LCARS Tactical Starfleet Accents
+val LcarsAmber = Color(0xFFFF9C00)
+val LcarsGold = Color(0xFFFFCC66)
+val LcarsBlue = Color(0xFF99CCFF)
+val LcarsPeriwinkle = Color(0xFFCC99CC)
+val LcarsCrimson = Color(0xFFFF5555)
+val LcarsWarpTeal = Color(0xFF33DDFF)
 
 // amoled
-val ElectricTeal = Color(0xFF4DD0E1)
+val ElectricTeal = Color(0xFFFF9C00)
 
 // Status colors
-val SilverTree = Color(0xFF6DB58B)
-val AlertRed = Color(0xFFCF6679)
-val Straw = Color(0xFFD4C483)
+val SilverTree = Color(0xFF33DDFF)
+val AlertRed = Color(0xFFFF5555)
+val Straw = Color(0xFFFFCC66)
 
 val Disabled = CoolGray.copy(alpha = 0.4f)
 
 // Other colors
-val ConfigHeaderColor = Color(0xFFBB86FC)
-val ConfigKeyColor = Color(0xFF03DAC5)
-val Heart = Color(0xFFDB61A2)
+val ConfigHeaderColor = Color(0xFFCC99CC)
+val ConfigKeyColor = Color(0xFF99CCFF)
+val Heart = Color(0xFFFF6666)
 
 sealed class ThemeColors(
     val background: Color,

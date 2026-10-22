@@ -150,6 +150,28 @@ class AutoTunnelViewModel(
         postSideEffect(AutoTunnelScreenSideEffect.SSID_SAVED)
     }
 
+    // One-tap LCARS Wi-Fi Auto-Engage preset:
+    // - On Wi-Fi connect -> VPN ON (or OFF if current SSID is marked Trusted Home Orbit)
+    // - On Wi-Fi disconnect (Cellular) -> VPN ON
+    fun applyWifiPreset(vpnOnWifiConnect: Boolean, vpnOnWifiDisconnect: Boolean, trustCurrentSsid: String? = null) = intent {
+        val currentTrusted = state.autoTunnelSettings.trustedNetworkSSIDs.toMutableSet()
+        if (trustCurrentSsid != null && trustCurrentSsid.isNotBlank()) {
+            if (!vpnOnWifiConnect) currentTrusted.add(trustCurrentSsid.trim())
+            else currentTrusted.remove(trustCurrentSsid.trim())
+        }
+        autoTunnelRepository.upsert(
+            state.autoTunnelSettings.copy(
+                isAutoTunnelEnabled = true,
+                isTunnelOnWifiEnabled = vpnOnWifiConnect || currentTrusted.isNotEmpty(),
+                isTunnelOnMobileDataEnabled = vpnOnWifiDisconnect,
+                trustedNetworkSSIDs = currentTrusted.toList(),
+            )
+        )
+        if (!state.autoTunnelActive) {
+            autoTunnelCoordinator.enable()
+        }
+    }
+
     fun setTrustedNetworkNames(to: List<String>) = intent {
         autoTunnelRepository.upsert(state.autoTunnelSettings.copy(trustedNetworkSSIDs = to))
     }

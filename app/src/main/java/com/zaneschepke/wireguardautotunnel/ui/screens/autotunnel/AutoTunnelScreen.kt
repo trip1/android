@@ -197,6 +197,100 @@ fun AutoTunnelScreen(
                 onClick = { onAutoTunnelClick() },
                 modifier = Modifier.focusRequester(focusRequester),
             )
+
+            val currentWifiSsid =
+                (uiState.connectivityState?.activeNetwork as? ActiveNetwork.Wifi)?.ssid?.takeIf {
+                    it != AndroidNetworkMonitor.ANDROID_UNKNOWN_SSID && it.isNotBlank()
+                }
+            val isAwayShieldActive =
+                uiState.autoTunnelActive &&
+                    uiState.autoTunnelSettings.isTunnelOnMobileDataEnabled &&
+                    (currentWifiSsid == null ||
+                        uiState.autoTunnelSettings.trustedNetworkSSIDs.contains(currentWifiSsid))
+            val isUntrustedWifiAutoOn =
+                uiState.autoTunnelActive &&
+                    uiState.autoTunnelSettings.isTunnelOnWifiEnabled
+
+            GroupLabel(
+                "TACTICAL WI-FI AUTO-ENGAGE",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+            SurfaceRow(
+                leading = { Icon(Icons.Outlined.SignalCellular4Bar, contentDescription = null) },
+                title = "Auto-ON on Wi-Fi Disconnect (Away Shield)",
+                description = {
+                    DescriptionText(
+                        if (currentWifiSsid != null)
+                            "Trust \"$currentWifiSsid\" (VPN OFF on this Wi-Fi, Auto-ON when disconnected)"
+                        else "Engage Transwarp automatically whenever Wi-Fi disconnects to cellular"
+                    )
+                },
+                selected = isAwayShieldActive,
+                trailing = {
+                    ThemedSwitch(
+                        checked = isAwayShieldActive,
+                        onClick = { enabled ->
+                            if (enabled) {
+                                viewModel.applyWifiPreset(
+                                    vpnOnWifiConnect = false,
+                                    vpnOnWifiDisconnect = true,
+                                    trustCurrentSsid = currentWifiSsid,
+                                )
+                            } else {
+                                viewModel.setTunnelOnCellular(false)
+                            }
+                        },
+                    )
+                },
+                onClick = {
+                    if (!isAwayShieldActive) {
+                        viewModel.applyWifiPreset(
+                            vpnOnWifiConnect = false,
+                            vpnOnWifiDisconnect = true,
+                            trustCurrentSsid = currentWifiSsid,
+                        )
+                    } else {
+                        viewModel.setTunnelOnCellular(false)
+                    }
+                },
+            )
+            SurfaceRow(
+                leading = { Icon(Icons.Outlined.Wifi, contentDescription = null) },
+                title = "Auto-ON on Wi-Fi Connect (Subspace Cloak)",
+                description = {
+                    DescriptionText(
+                        "Engage Transwarp automatically whenever connected to any non-trusted Wi-Fi"
+                    )
+                },
+                selected = isUntrustedWifiAutoOn,
+                trailing = {
+                    ThemedSwitch(
+                        checked = isUntrustedWifiAutoOn,
+                        onClick = { enabled ->
+                            if (enabled) {
+                                viewModel.applyWifiPreset(
+                                    vpnOnWifiConnect = true,
+                                    vpnOnWifiDisconnect =
+                                        uiState.autoTunnelSettings.isTunnelOnMobileDataEnabled,
+                                )
+                            } else {
+                                viewModel.setAutoTunnelOnWifiEnabled(false)
+                            }
+                        },
+                    )
+                },
+                onClick = {
+                    if (!isUntrustedWifiAutoOn) {
+                        viewModel.applyWifiPreset(
+                            vpnOnWifiConnect = true,
+                            vpnOnWifiDisconnect =
+                                uiState.autoTunnelSettings.isTunnelOnMobileDataEnabled,
+                        )
+                    } else {
+                        viewModel.setAutoTunnelOnWifiEnabled(false)
+                    }
+                },
+            )
         }
         Column {
             GroupLabel(

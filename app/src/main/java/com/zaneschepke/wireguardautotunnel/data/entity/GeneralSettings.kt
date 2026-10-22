@@ -18,7 +18,7 @@ data class GeneralSettings(
     val isGlobalSplitTunnelEnabled: Boolean = false,
     @ColumnInfo(name = "app_mode", defaultValue = "0")
     val tunnelMode: TunnelMode = TunnelMode.fromValue(0),
-    @ColumnInfo(name = "theme", defaultValue = "AUTOMATIC") val theme: String = "AUTOMATIC",
+    @ColumnInfo(name = "theme", defaultValue = "DARK") val theme: String = "DARK",
     @ColumnInfo(name = "locale") val locale: String? = null,
     @ColumnInfo(name = "remote_key") val remoteKey: String? = null,
     @ColumnInfo(name = "is_remote_control_enabled", defaultValue = "0")

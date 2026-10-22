@@ -177,6 +177,24 @@ fun TunnelList(
             return@LazyColumn
         }
 
+        item(key = "lcars_tactical_header") {
+            SurfaceRow(
+                title =
+                    if (uiState.hasActiveTunnel) "TRANSWARP CONDUIT // ENGAGED"
+                    else "TRANSWARP CONDUIT // STANDBY",
+                description = {
+                    Text(
+                        text =
+                            "ACTIVE CONDUITS: ${uiState.backendStatus.activeTunnels.size} / ${uiState.tunnels.size}  ·  TAP BOLT TAB FOR WI-FI AUTO-ON/OFF",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                },
+                selected = uiState.hasActiveTunnel,
+                onClick = { navController.push(Route.AutoTunnel) },
+            )
+        }
+
         itemsIndexed(items = rows, key = { _, row -> row.key }) { index, row ->
             if (uiState.isReorderMode) {
                 ReorderableItem(reorderableLazyListState, row.key) { isDragging ->
