@@ -155,6 +155,20 @@
         </activity>
 
         <activity
+            android:name=".BeamActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:label="@string/beam_via_transwarp"
+            android:theme="@style/Theme.WireguardAutoTunnel">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name=".core.shortcut.ShortcutsActivity"
             android:enabled="true"
             android:exported="false"

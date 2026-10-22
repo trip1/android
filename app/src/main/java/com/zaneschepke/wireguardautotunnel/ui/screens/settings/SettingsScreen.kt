@@ -1,5 +1,11 @@
 package com.zaneschepke.wireguardautotunnel.ui.screens.settings
 
+import com.zaneschepke.wireguardautotunnel.util.network.BeamReceiver
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.collectAsState
+import androidx.compose.material.icons.outlined.CellTower
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -254,6 +260,22 @@ fun SettingsScreen(
                 onClick = {
                     viewModel.setTunnelScriptedEnabled(!uiState.settings.tunnelScriptingEnabled)
                 },
+            )
+            val beamReceiver: BeamReceiver = koinInject()
+            val beamOn by beamReceiver.enabled.collectAsState(false)
+            val beamScope = rememberCoroutineScope()
+            SurfaceRow(
+                leading = { Icon(Icons.Outlined.CellTower, contentDescription = null) },
+                title = stringResource(R.string.beam_receiver),
+                description = { DescriptionText(stringResource(R.string.beam_receiver_desc)) },
+                trailing = { modifier ->
+                    ThemedSwitch(
+                        checked = beamOn,
+                        onClick = { beamScope.launch { beamReceiver.setEnabled(it) } },
+                        modifier = modifier,
+                    )
+                },
+                onClick = { beamScope.launch { beamReceiver.setEnabled(!beamOn) } },
             )
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.Autorenew, contentDescription = null) },

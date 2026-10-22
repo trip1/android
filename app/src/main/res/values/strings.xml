@@ -769,6 +769,16 @@
     <string name="peer_offline">Peer offline</string>
     <string name="rtt_template">rtt: %1$s</string>
     <string name="copy_ip">Copy IP</string>
+    <string name="beam_receiver">Beam receiver</string>
+    <string name="beam_receiver_desc">Accept files from mesh peers on port 7449 while a tunnel is up. Listens on the tunnel address only; the tunnel is the only authentication.</string>
+    <string name="beam_received">Transwarp Beam received</string>
+    <string name="beam_received_desc">%1$s from %2$s saved to Downloads</string>
+    <string name="beam_via_transwarp">Beam via Transwarp</string>
+    <string name="beam_no_peers">No active tunnel peers. Enter a mesh IP below.</string>
+    <string name="beam_manual_ip">Peer IP</string>
+    <string name="beam_send">Beam</string>
+    <string name="beam_sent">Beamed to %1$s</string>
+    <string name="beam_failed">Beam failed: %1$s</string>
     <string name="socks5" translatable="false">SOCKS5</string>
     <string name="http" translatable="false">HTTP</string>
 </resources>

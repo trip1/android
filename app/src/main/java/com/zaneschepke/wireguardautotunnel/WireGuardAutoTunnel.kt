@@ -1,5 +1,6 @@
 package com.zaneschepke.wireguardautotunnel
 
+import com.zaneschepke.wireguardautotunnel.util.network.BeamReceiver
 import android.app.Application
 import android.content.ComponentCallbacks2
 import android.os.StrictMode
@@ -118,6 +119,7 @@ class WireGuardAutoTunnel : Application(), KoinComponent {
         dispatcher.bind(applicationScope, provider.events, tunnelCoordinator.errors)
         get<TunnelOriginHolder>().bind(applicationScope, tunnelCoordinator.actions)
         get<AppProvider>().bind(applicationScope)
+        get<BeamReceiver>().bind(applicationScope)
 
         if (BuildConfig.FLAVOR == Constants.STANDALONE_FLAVOR) {
             UpdateCheckWorker.start(this)
