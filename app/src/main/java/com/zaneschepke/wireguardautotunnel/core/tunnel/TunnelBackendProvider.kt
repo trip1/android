@@ -75,7 +75,9 @@ class TunnelBackendProvider(
         fun field(name: String) = TunnelBackend::class.java.getDeclaredField(name).apply { isAccessible = true }.get(backend)
         // TunnelEngine is Kotlin-internal: call its suspend updatePeers(handle, mode, peers) reflectively
         val engine = field("engine")
-        val handle = (field("byTunnelId") as Map<*, *>)[tunnelId] as? Int ?: error("tunnel $tunnelId not running")
+        // byHandle (native handle -> tunnel id); R8 folds the inverse byTunnelId map away
+        val handle = (field("byHandle") as Map<*, *>).entries.firstOrNull { it.value == tunnelId }?.key as? Int
+            ?: error("tunnel $tunnelId not running")
         val mode = backendStatus.value.activeTunnels[tunnelId]?.mode ?: error("tunnel $tunnelId has no mode")
         val m = engine.javaClass.methods.first { it.name == "updatePeers" && it.parameterCount == 4 }
         suspendCoroutineUninterceptedOrReturn<Any?> { cont -> m.invoke(engine, handle, mode, peers, cont) }
