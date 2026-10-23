@@ -1,7 +1,7 @@
 package com.zaneschepke.wireguardautotunnel.util
 
 object Constants {
-    const val BASE_PACKAGE = "com.zaneschepke.wireguardautotunnel"
+    const val BASE_PACKAGE = "chat.warpsignal.transwarp"
 
     const val BASE_LOG_FILE_NAME = "wg_tunnel_logs"
 

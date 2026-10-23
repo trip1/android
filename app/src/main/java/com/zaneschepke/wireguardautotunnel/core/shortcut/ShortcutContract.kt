@@ -2,7 +2,7 @@ package com.zaneschepke.wireguardautotunnel.core.shortcut
 
 object ShortcutContract {
 
-    const val EXTRA_SHORTCUT_TYPE = "com.zaneschepke.wireguardautotunnel.shortcut.TYPE"
+    const val EXTRA_SHORTCUT_TYPE = "chat.warpsignal.transwarp.shortcut.TYPE"
 
     const val EXTRA_TUNNEL_NAME = "tunnelName"
 

@@ -31,7 +31,7 @@ licensee {
 }
 
 configure<ApplicationExtension> {
-    namespace = Constants.APP_ID
+    namespace = Constants.NAMESPACE
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     androidResources { generateLocaleConfig = true }
@@ -75,7 +75,12 @@ configure<ApplicationExtension> {
 
     signingConfigs {
         create(Constants.RELEASE) {
-            storeFile = file(System.getenv("KEY_STORE_PATH") ?: "keystore/android_keystore.jks")
+            storeFile =
+                file(
+                    LocalProperties.get("KEY_STORE_PATH")
+                        ?: System.getenv("KEY_STORE_PATH")
+                        ?: "keystore/android_keystore.jks"
+                )
             storePassword =
                 LocalProperties.get("SIGNING_STORE_PASSWORD")
                     ?: System.getenv("SIGNING_STORE_PASSWORD")
