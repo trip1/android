@@ -72,11 +72,13 @@ class TunnelBackendProvider(
     // Backend has no public peer update; its engine does (UAPI replace_peers, used by its own recovery). Fields kept
     // by name in proguard-rules.pro.
     override suspend fun updatePeers(tunnelId: Int, peers: List<PeerSection>): Result<Unit> = runCatching {
-        fun field(name: String) = TunnelBackend::class.java.getDeclaredField(name).apply { isAccessible = true }.get(backend)
+        fun field(name: String) =
+            runCatching { TunnelBackend::class.java.getDeclaredField(name).apply { isAccessible = true }.get(backend) }.getOrNull()
         // TunnelEngine is Kotlin-internal: call its suspend updatePeers(handle, mode, peers) reflectively
-        val engine = field("engine")
-        // byHandle (native handle -> tunnel id); R8 folds the inverse byTunnelId map away
-        val handle = (field("byHandle") as Map<*, *>).entries.firstOrNull { it.value == tunnelId }?.key as? Int
+        val engine = field("engine") ?: error("no engine")
+        // byTunnelId (tunnel id -> native handle) or its inverse byHandle: R8 may fold either away
+        val handle = (field("byTunnelId") as? Map<*, *>)?.get(tunnelId) as? Int
+            ?: (field("byHandle") as? Map<*, *>)?.entries?.firstOrNull { it.value == tunnelId }?.key as? Int
             ?: error("tunnel $tunnelId not running")
         val mode = backendStatus.value.activeTunnels[tunnelId]?.mode ?: error("tunnel $tunnelId has no mode")
         val m = engine.javaClass.methods.first { it.name == "updatePeers" && it.parameterCount == 4 }
