@@ -59,6 +59,25 @@ class MeshEnrollTest {
     }
 
     @Test
+    fun nameAndExpiryHeadersSurviveStorage() {
+        val conf =
+            MeshEnroll.hoistPeerNames(
+                "[Interface]\nAddress = 10.89.200.5/32\nDNS = 10.89.0.1\n# Transwarp-Name = zz-emu\n" +
+                    "# Transwarp-Expires = 2026-11-22T10:00:00Z\nPrivateKey = yAnz5TF+lXXJte14tji3zlMNq+hd2rYUIgJBgB3fBmk=\n\n" +
+                    "[Peer]\nPublicKey = xTIBA5rboUvnH4htodjb6e697QjLERt1NAB4mZqp8Dg=\nAllowedIPs = 10.89.0.1/32, 10.89.200.0/21, 10.0.0.0/16\n"
+            )
+        val stored = com.wgtunnel.parser.Config.parseQuickString(conf).asQuickString()
+        assertEquals("zz-emu", MeshEnroll.header(stored, "Name"))
+        assertEquals("10.89.0.1", com.wgtunnel.parser.Config.parseQuickString(stored).`interface`.dns)
+        val now = java.time.Instant.parse("2026-10-23T09:00:00Z").toEpochMilli()
+        assertEquals(30L, MeshEnroll.expiresInDays(stored, now))
+        assertEquals(-1L, MeshEnroll.expiresInDays(stored, java.time.Instant.parse("2026-11-23T00:00:00Z").toEpochMilli()))
+        assertNull(MeshEnroll.expiresInDays("[Interface]\nAddress = 10.0.0.2/32\n"))
+        assertEquals(listOf("10.0.0.0/16"), MeshEnroll.lanRoutes("10.89.0.1/32, 10.89.200.0/21, 10.0.0.0/16"))
+        assertEquals(emptyList<String>(), MeshEnroll.lanRoutes("0.0.0.0/0, ::/0"))
+    }
+
+    @Test
     fun exitHubHostSkipsDefaultRoutes() {
         assertEquals("10.89.0.1", com.zaneschepke.wireguardautotunnel.util.network.firstAllowedHost("0.0.0.0/0, ::/0, 10.89.0.1/32"))
         assertNull(com.zaneschepke.wireguardautotunnel.util.network.firstAllowedHost("0.0.0.0/0, ::/0"))

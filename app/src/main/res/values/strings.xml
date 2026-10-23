@@ -723,6 +723,10 @@
     <string name="peer_offline">Peer offline</string>
     <string name="rtt_template">rtt: %1$s</string>
     <string name="copy_ip">Copy IP</string>
+    <string name="key_expires_in">key expires in %1$d d</string>
+    <string name="key_expired">key expired: renew in the mesh dashboard</string>
+    <string name="key_expiry_title">Transwarp key expiring</string>
+    <string name="key_expiry_desc">%1$s expires in %2$d d. Renew it in the mesh dashboard and enroll the new code.</string>
     <string name="beam_receiver">Beam receiver</string>
     <string name="beam_receiver_desc">Accept files from mesh peers on port 7449 while a tunnel is up. Listens on the tunnel address only; the tunnel is the only authentication.</string>
     <string name="beam_received">Transwarp Beam received</string>

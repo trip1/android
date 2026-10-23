@@ -10,6 +10,7 @@ import androidx.compose.material.icons.rounded.Circle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -23,6 +24,7 @@ import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.ui.common.button.SurfaceRow
 import com.zaneschepke.wireguardautotunnel.ui.common.functions.rememberClipboardHelper
 import com.zaneschepke.wireguardautotunnel.ui.theme.AlertRed
+import com.zaneschepke.wireguardautotunnel.ui.theme.LcarsCrimson
 import com.zaneschepke.wireguardautotunnel.ui.theme.SilverTree
 import com.zaneschepke.wireguardautotunnel.util.extensions.abbreviateKey
 import com.zaneschepke.wireguardautotunnel.util.extensions.toAgoDisplay
@@ -34,6 +36,16 @@ import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 
 private const val OFFLINE_AFTER_SECONDS = 180L
+
+/** Key expiry from `# Transwarp-Expires`; LCARS crimson under 7 days or once expired. */
+@Composable
+fun ExpiryText(days: Long) {
+    Text(
+        text = if (days < 0) stringResource(R.string.key_expired) else stringResource(R.string.key_expires_in, days),
+        style = MaterialTheme.typography.bodySmall,
+        color = if (days < 7) LcarsCrimson else MaterialTheme.colorScheme.outline,
+    )
+}
 
 /** Mesh Sensor Array: every peer of an active tunnel with handshake age, traffic and live RTT. */
 @Composable
@@ -50,6 +62,7 @@ fun MeshSensorArray(active: ActiveConfig, stored: Config?, route: String? = null
         }
     val style = MaterialTheme.typography.bodySmall
     val color = MaterialTheme.colorScheme.outline
+    stored?.let { MeshEnroll.expiresInDays(it.asQuickString()) }?.let { ExpiryText(it) }
     active.peers.forEach { peer ->
         // stored routes: under Full Warp the running peer's first route is 0.0.0.0/0
         val host =

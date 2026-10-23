@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import com.wgtunnel.backend.state.ActiveTunnel
 import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.core.orchestration.EndpointLadder
+import com.zaneschepke.wireguardautotunnel.util.network.MeshEnroll
 import com.zaneschepke.wireguardautotunnel.domain.model.TunnelConfig
 import com.zaneschepke.wireguardautotunnel.ui.LocalIsAndroidTV
 import com.zaneschepke.wireguardautotunnel.ui.LocalNavController
@@ -509,9 +510,11 @@ private fun tunnelRowDescription(
     val entryName =
         tunnel.entryTunnelId?.let { id -> uiState.tunnels.firstOrNull { it.id == id }?.name }
     val latency = uiState.pingLatencies[tunnel.id]
-    if (entryName == null && latency == null && route == null) return null
+    val expiry = MeshEnroll.expiresInDays(tunnel.quickConfig)
+    if (entryName == null && latency == null && route == null && expiry == null) return null
     return {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            if (expiry != null) ExpiryText(expiry)
             if (route != null) {
                 AssistChip(
                     onClick = {},

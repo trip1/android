@@ -677,8 +677,18 @@ class SharedAppViewModel(
     fun enroll(code: MeshEnroll.Code) = intent {
         try {
             val result = withContext(Dispatchers.IO) { MeshEnroll.enroll(code) }
-            Config.parseQuickString(result.config).validate()
-            importTunnelConfigs(mapOf(result.config to (result.name ?: "gofire-mesh")))
+            val parsed = Config.parseQuickString(result.config).also { it.validate() }
+            // renewal of an enrolled device: same Transwarp-Name -> new keys/expiry, same tunnel id and settings
+            val name = MeshEnroll.header(result.config, "Name")
+            val existing = name?.let { n -> tunnelRepository.getAll().firstOrNull { MeshEnroll.header(it.quickConfig, "Name") == n } }
+            if (existing != null) {
+                val updated = existing.copy(quickConfig = parsed.asQuickString())
+                tunnelRepository.save(updated)
+                if (tunnelCoordinator.backendStatus.value.activeTunnels.containsKey(existing.id)) {
+                    tunnelCoordinator.stopTunnel(existing.id)
+                    tunnelCoordinator.startTunnel(updated)
+                }
+            } else importTunnelConfigs(mapOf(result.config to (result.name ?: "gofire-mesh")))
             postSideEffect(
                 GlobalSideEffect.Snackbar(
                     StringValue.StringResource(R.string.enroll_success),

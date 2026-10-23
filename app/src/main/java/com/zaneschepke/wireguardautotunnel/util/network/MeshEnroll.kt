@@ -9,6 +9,7 @@ import java.security.KeyStore
 import java.security.MessageDigest
 import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
+import java.time.OffsetDateTime
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
@@ -57,7 +58,7 @@ object MeshEnroll {
             when {
                 l.startsWith("[") -> name = null
                 NAME_COMMENT.matches(l) -> name = NAME_COMMENT.find(l)!!.groupValues[1].trim()
-                LADDER.matches(l) -> header += l
+                TRANSWARP_HEADER.matches(l) -> header += l
                 l.startsWith("PublicKey", true) && name != null ->
                     header += "# Peer ${l.substringAfter('=').trim()} = $name"
             }
@@ -71,12 +72,30 @@ object MeshEnroll {
             PEER_NAME.matchEntire(c.trim())?.groupValues?.takeIf { it[1] == publicKey }?.get(2)?.trim()
         }
 
-    /** gofire's ordered `# Transwarp-Endpoints = a, b, wss://c` (hoisted to the header), or empty. */
-    fun endpointLadder(conf: String): List<String> =
-        conf.lineSequence().firstNotNullOfOrNull { LADDER.matchEntire(it.trim()) }
-            ?.groupValues?.get(1)?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
+    /** gofire's `# Transwarp-<key> = value` (hoisted to the header), or null. */
+    fun header(conf: String, key: String): String? =
+        conf.lineSequence().firstNotNullOfOrNull { l ->
+            TRANSWARP_HEADER.matchEntire(l.trim())?.groupValues?.takeIf { it[1].equals(key, true) }?.get(2)?.trim()
+        }
 
-    private val LADDER = Regex("""#\s*Transwarp-Endpoints\s*=\s*(.+)""", RegexOption.IGNORE_CASE)
+    /** gofire's ordered `# Transwarp-Endpoints = a, b, wss://c`, or empty. */
+    fun endpointLadder(conf: String): List<String> =
+        header(conf, "Endpoints")?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
+
+    /** Whole days until `# Transwarp-Expires` (negative = expired), or null when it never expires. */
+    fun expiresInDays(conf: String, nowMs: Long = System.currentTimeMillis()): Long? =
+        header(conf, "Expires")?.let { runCatching { OffsetDateTime.parse(it).toInstant().toEpochMilli() }.getOrNull() }
+            ?.let { exp -> if (exp <= nowMs) -1 else (exp - nowMs) / 86_400_000 }
+
+    /** Private routes other than the mesh range (10.89.0.0/16) in the hub's AllowedIPs: subnet (LAN) access. */
+    fun lanRoutes(allowedIPs: String?): List<String> =
+        allowedIPs.orEmpty().split(',').map { it.trim() }.filter {
+            it.contains('/') && !it.startsWith("10.89.") &&
+                (it.startsWith("10.") || it.startsWith("192.168.") ||
+                    Regex("""172\.(1[6-9]|2\d|3[01])\..*""").matches(it))
+        }
+
+    private val TRANSWARP_HEADER = Regex("""#\s*Transwarp-([\w-]+)\s*=\s*(.+)""", RegexOption.IGNORE_CASE)
     private val NAME_COMMENT = Regex("""#\s*Name\s*=\s*(.+)""", RegexOption.IGNORE_CASE)
     private val PEER_NAME = Regex("""#\s*Peer\s+(\S+)\s+=\s*(.+)""")
 
