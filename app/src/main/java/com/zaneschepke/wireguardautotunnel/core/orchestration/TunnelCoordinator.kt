@@ -382,6 +382,16 @@ class TunnelCoordinator(
             .getOrNull()
     }
 
+    /** Persists Full Warp and restarts the tunnel if it's running so the new routes apply. */
+    suspend fun setExitNode(tunnel: TunnelConfig, to: Boolean) {
+        val updated = tunnel.copy(isExitNode = to)
+        tunnelRepository.save(updated)
+        if (backendStatus.value.activeTunnels.containsKey(tunnel.id)) {
+            stopTunnel(tunnel.id)
+            startTunnel(updated)
+        }
+    }
+
     suspend fun startDefault() {
         tunnelRepository.getDefaultTunnel()?.let { tunnel -> startTunnel(tunnel) }
     }

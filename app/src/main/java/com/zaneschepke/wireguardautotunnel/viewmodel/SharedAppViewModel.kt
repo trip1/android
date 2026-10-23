@@ -291,6 +291,10 @@ class SharedAppViewModel(
         settingsRepository.updatePinLockEnabled(enabled)
     }
 
+    fun setExitNode(tunnelConfig: TunnelConfig, to: Boolean) = intent {
+        tunnelCoordinator.setExitNode(tunnelConfig, to)
+    }
+
     fun stopTunnel(tunnelConfig: TunnelConfig) = intent {
         tunnelCoordinator.stopTunnel(tunnelConfig.id)
     }

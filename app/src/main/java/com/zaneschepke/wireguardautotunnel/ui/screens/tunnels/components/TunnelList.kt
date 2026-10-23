@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.TravelExplore
 import androidx.compose.material.icons.rounded.Circle
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
@@ -470,6 +471,15 @@ private fun ListRow(
                         { viewModel.toggleSelectedTunnel(tunnel.id) }
                     },
                 trailing = { rowModifier ->
+                    IconButton(onClick = { viewModel.setExitNode(tunnel, !tunnel.isExitNode) }) {
+                        Icon(
+                            Icons.Outlined.TravelExplore,
+                            contentDescription = stringResource(R.string.full_warp),
+                            tint =
+                                if (tunnel.isExitNode) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outline,
+                        )
+                    }
                     SwitchWithDivider(
                         checked = isRunning,
                         onClick = { checked ->

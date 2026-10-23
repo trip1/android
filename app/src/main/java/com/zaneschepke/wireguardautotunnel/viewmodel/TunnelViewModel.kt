@@ -102,13 +102,7 @@ class TunnelViewModel(
     }
 
     fun onExitNode(to: Boolean) = intent {
-        val tunnel = state.tunnel ?: return@intent
-        val updated = tunnel.copy(isExitNode = to)
-        tunnelRepository.save(updated)
-        if (state.activeConfig != null) {
-            tunnelCoordinator.stopTunnel(tunnelId)
-            tunnelCoordinator.startTunnel(updated)
-        }
+        tunnelCoordinator.setExitNode(state.tunnel ?: return@intent, to)
     }
 
     fun onIPv6Action(iPv6Intent: IPv6Intent) = intent {
