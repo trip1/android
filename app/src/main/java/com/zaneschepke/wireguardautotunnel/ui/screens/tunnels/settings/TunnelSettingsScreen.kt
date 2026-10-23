@@ -92,6 +92,7 @@ fun TunnelSettingsScreen(
                     active,
                     remember(tunnel.quickConfig) { runCatching { tunnel.getConfig() }.getOrNull() },
                     EndpointLadder.routes.collectAsState().value[tunnel.id],
+                    tunnel.id,
                 )
             }
         }

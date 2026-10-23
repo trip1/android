@@ -12,6 +12,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
@@ -21,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.wgtunnel.parser.ActiveConfig
 import com.wgtunnel.parser.Config
 import com.zaneschepke.wireguardautotunnel.R
+import com.zaneschepke.wireguardautotunnel.core.orchestration.DirectPaths
 import com.zaneschepke.wireguardautotunnel.ui.common.button.SurfaceRow
 import com.zaneschepke.wireguardautotunnel.ui.common.functions.rememberClipboardHelper
 import com.zaneschepke.wireguardautotunnel.ui.theme.AlertRed
@@ -49,7 +51,9 @@ fun ExpiryText(days: Long) {
 
 /** Mesh Sensor Array: every peer of an active tunnel with handshake age, traffic and live RTT. */
 @Composable
-fun MeshSensorArray(active: ActiveConfig, stored: Config?, route: String? = null) {
+fun MeshSensorArray(active: ActiveConfig, stored: Config?, route: String? = null, tunnelId: Int = -1) {
+    val directory = DirectPaths.directories.collectAsState().value[tunnelId]
+    val direct = DirectPaths.direct.collectAsState().value[tunnelId].orEmpty()
     val context = LocalContext.current
     val clipboard = rememberClipboardHelper()
     val networkUtils: NetworkUtils = koinInject()
@@ -70,7 +74,14 @@ fun MeshSensorArray(active: ActiveConfig, stored: Config?, route: String? = null
                 stored?.peers?.firstOrNull { it.publicKey == peer.publicKey }?.allowedIPs
                     ?: peer.allowedIPs
             )
+        val storedPeer = stored?.peers?.firstOrNull { it.publicKey == peer.publicKey }
         val name = stored?.let { MeshEnroll.peerName(it.headerComments, peer.publicKey) }
+            ?: directory?.devices?.firstOrNull { it.publicKey == peer.publicKey }?.name
+        val lan = MeshEnroll.lanRoutes(storedPeer?.allowedIPs)
+        // hub peer carries the client range: online peers clients not on a direct path go through it
+        val viaHub = if (storedPeer?.allowedIPs?.contains("10.89.200.0/21") == true)
+            directory?.devices?.filter { it.kind == "client" && it.online && it.meshIp != directory.selfIp && it.publicKey !in direct }
+                ?.map { it.name }.orEmpty() else emptyList()
         val rtt by
             produceState<Double?>(null, host) {
                 if (host == null) return@produceState
@@ -99,6 +110,9 @@ fun MeshSensorArray(active: ActiveConfig, stored: Config?, route: String? = null
             description = {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     if (name != null && host != null) StatText(host, style, color)
+                    if (peer.publicKey in direct) StatText(stringResource(R.string.path_direct), style, SilverTree)
+                    if (lan.isNotEmpty()) StatText(stringResource(R.string.lan_template, lan.joinToString()), style, color)
+                    if (viaHub.isNotEmpty()) StatText(stringResource(R.string.via_hub_template, viaHub.joinToString()), style, color)
                     peer.endpoint?.let {
                         StatText(stringResource(R.string.endpoint_template, it), style, color)
                         route?.let { r -> StatText(stringResource(R.string.route_template, r), style, color) }
