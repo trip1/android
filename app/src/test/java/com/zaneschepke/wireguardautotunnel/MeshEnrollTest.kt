@@ -59,6 +59,12 @@ class MeshEnrollTest {
     }
 
     @Test
+    fun exitHubHostSkipsDefaultRoutes() {
+        assertEquals("10.89.0.1", com.zaneschepke.wireguardautotunnel.util.network.firstAllowedHost("0.0.0.0/0, ::/0, 10.89.0.1/32"))
+        assertNull(com.zaneschepke.wireguardautotunnel.util.network.firstAllowedHost("0.0.0.0/0, ::/0"))
+    }
+
+    @Test
     fun insertsPrivateKeyAfterInterface() {
         val out = MeshEnroll.insertPrivateKey("# hi\n[Interface]\nAddress = 10.1.0.2/32\n\n[Peer]\nPublicKey = x", "PRIV")
         assertEquals("# hi\n[Interface]\nPrivateKey = PRIV\nAddress = 10.1.0.2/32\n\n[Peer]\nPublicKey = x", out)

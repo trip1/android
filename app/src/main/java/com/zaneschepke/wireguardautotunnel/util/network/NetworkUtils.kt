@@ -89,5 +89,6 @@ class NetworkUtils(private val ioDispatcher: CoroutineDispatcher) {
 }
 
 /** First AllowedIPs entry without its prefix length: the peer's own mesh address. */
+/** First routed host, skipping default routes (an exit client's hub has only 0.0.0.0/0, ::/0). */
 fun firstAllowedHost(allowedIPs: String?): String? =
-    allowedIPs?.split(',')?.firstOrNull()?.trim()?.substringBefore('/')?.takeIf { it.isNotEmpty() }
+    allowedIPs?.split(',')?.map { it.trim().substringBefore('/') }?.firstOrNull { it.isNotEmpty() && it != "0.0.0.0" && it != "::" }

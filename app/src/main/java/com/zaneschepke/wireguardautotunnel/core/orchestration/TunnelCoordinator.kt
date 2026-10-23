@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -121,6 +122,8 @@ class TunnelCoordinator(
                 .filterNotNull()
                 .map { it.activeNetwork.key() }
                 .distinctUntilChanged()
+                // stepping down with no network at all would only climb back down the ladder
+                .filter { it != "none" }
                 .drop(1)
                 .collect { ladder.steppedDown().forEach { restartOnLadder(it, 0, TunnelActionSource.USER) } }
         }
