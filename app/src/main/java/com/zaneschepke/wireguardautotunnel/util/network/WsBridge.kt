@@ -30,7 +30,8 @@ import timber.log.Timber
  * kill-switch mode, whose TUN is our own VpnService. If no underlay is known the default route is used.
  */
 class WsBridge(private val url: String, private val underlay: () -> Network?) : Closeable {
-    private val udp = DatagramSocket(InetSocketAddress(InetAddress.getLoopbackAddress(), 0))
+    // explicit IPv4: getLoopbackAddress() is ::1 on Android, and the Endpoint we hand WireGuard is 127.0.0.1
+    private val udp = DatagramSocket(InetSocketAddress(InetAddress.getByName("127.0.0.1"), 0))
     val port: Int = udp.localPort
     @Volatile private var wgAddress: SocketAddress? = null
     @Volatile private var ws: WebSocket? = null
