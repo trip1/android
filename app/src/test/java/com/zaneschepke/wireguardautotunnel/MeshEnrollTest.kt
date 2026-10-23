@@ -22,6 +22,20 @@ class MeshEnrollTest {
     }
 
     @Test
+    fun peerNamesSurviveTheParser() {
+        val key = "xTIBA5rboUvnH4htodjb6e697QjLERt1NAB4mZqp8Dg="
+        val conf =
+            MeshEnroll.hoistPeerNames(
+                "[Interface]\nPrivateKey = yAnz5TF+lXXJte14tji3zlMNq+hd2rYUIgJBgB3fBmk=\nAddress = 10.8.0.2/32\n\n" +
+                    "[Peer]\n# Name = pi-5-1\nPublicKey = $key\nAllowedIPs = 10.8.0.1/32\n"
+            )
+        val stored = com.wgtunnel.parser.Config.parseQuickString(conf)
+        val header = com.wgtunnel.parser.Config.parseQuickString(stored.asQuickString()).headerComments
+        assertEquals("pi-5-1", MeshEnroll.peerName(header, key))
+        assertNull(MeshEnroll.peerName(header, "other="))
+    }
+
+    @Test
     fun insertsPrivateKeyAfterInterface() {
         val out = MeshEnroll.insertPrivateKey("# hi\n[Interface]\nAddress = 10.1.0.2/32\n\n[Peer]\nPublicKey = x", "PRIV")
         assertEquals("# hi\n[Interface]\nPrivateKey = PRIV\nAddress = 10.1.0.2/32\n\n[Peer]\nPublicKey = x", out)

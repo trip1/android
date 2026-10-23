@@ -27,6 +27,7 @@ import com.zaneschepke.wireguardautotunnel.ui.theme.SilverTree
 import com.zaneschepke.wireguardautotunnel.util.extensions.abbreviateKey
 import com.zaneschepke.wireguardautotunnel.util.extensions.toAgoDisplay
 import com.zaneschepke.wireguardautotunnel.util.network.NetworkUtils
+import com.zaneschepke.wireguardautotunnel.util.network.MeshEnroll
 import com.zaneschepke.wireguardautotunnel.util.network.firstAllowedHost
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
@@ -50,12 +51,13 @@ fun MeshSensorArray(active: ActiveConfig, stored: Config?) {
     val style = MaterialTheme.typography.bodySmall
     val color = MaterialTheme.colorScheme.outline
     active.peers.forEach { peer ->
-        val host = firstAllowedHost(peer.allowedIPs)
-        val name =
-            stored?.peers
-                ?.firstOrNull { it.publicKey == peer.publicKey }
-                ?.comments
-                ?.firstNotNullOfOrNull { NAME_COMMENT.find(it)?.groupValues?.get(1)?.trim() }
+        // stored routes: under Full Warp the running peer's first route is 0.0.0.0/0
+        val host =
+            firstAllowedHost(
+                stored?.peers?.firstOrNull { it.publicKey == peer.publicKey }?.allowedIPs
+                    ?: peer.allowedIPs
+            )
+        val name = stored?.let { MeshEnroll.peerName(it.headerComments, peer.publicKey) }
         val rtt by
             produceState<Double?>(null, host) {
                 if (host == null) return@produceState
@@ -125,5 +127,3 @@ fun MeshSensorArray(active: ActiveConfig, stored: Config?) {
         )
     }
 }
-
-private val NAME_COMMENT = Regex("""#\s*Name\s*=\s*(.+)""", RegexOption.IGNORE_CASE)

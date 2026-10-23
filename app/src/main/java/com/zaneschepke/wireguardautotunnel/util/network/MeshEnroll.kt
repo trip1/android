@@ -49,6 +49,30 @@ object MeshEnroll {
         return lines.joinToString("\n")
     }
 
+    /** The parser drops comments inside `[Peer]`; keep gofire's `# Name = x` as a header `# Peer <key> = x`. */
+    fun hoistPeerNames(conf: String): String {
+        var name: String? = null
+        val header = mutableListOf<String>()
+        conf.lines().map { it.trim() }.forEach { l ->
+            when {
+                l.startsWith("[") -> name = null
+                NAME_COMMENT.matches(l) -> name = NAME_COMMENT.find(l)!!.groupValues[1].trim()
+                l.startsWith("PublicKey", true) && name != null ->
+                    header += "# Peer ${l.substringAfter('=').trim()} = $name"
+            }
+        }
+        return (header + conf).joinToString("\n")
+    }
+
+    /** Peer name written by [hoistPeerNames], or null. */
+    fun peerName(headerComments: List<String>, publicKey: String): String? =
+        headerComments.firstNotNullOfOrNull { c ->
+            PEER_NAME.matchEntire(c.trim())?.groupValues?.takeIf { it[1] == publicKey }?.get(2)?.trim()
+        }
+
+    private val NAME_COMMENT = Regex("""#\s*Name\s*=\s*(.+)""", RegexOption.IGNORE_CASE)
+    private val PEER_NAME = Regex("""#\s*Peer\s+(\S+)\s+=\s*(.+)""")
+
     fun sha256Hex(der: ByteArray): String =
         MessageDigest.getInstance("SHA-256").digest(der).joinToString("") { "%02x".format(it) }
 
@@ -98,7 +122,7 @@ object MeshEnroll {
             if (conn.responseCode !in 200..299) error("enroll failed: HTTP ${conn.responseCode}")
             val json = Json.parseToJsonElement(conn.inputStream.bufferedReader().readText()).jsonObject
             val conf = json["config"]?.jsonPrimitive?.content ?: error("no config in response")
-            return Result(insertPrivateKey(conf, privateKey), json["name"]?.jsonPrimitive?.content)
+            return Result(hoistPeerNames(insertPrivateKey(conf, privateKey)), json["name"]?.jsonPrimitive?.content)
         } finally {
             conn.disconnect()
         }
