@@ -36,6 +36,29 @@ class MeshEnrollTest {
     }
 
     @Test
+    fun endpointLadderSurvivesStorageAndSwapsOnlyTheHub() {
+        val hub = "xTIBA5rboUvnH4htodjb6e697QjLERt1NAB4mZqp8Dg="
+        val conf =
+            MeshEnroll.hoistPeerNames(
+                "[Interface]\n# Transwarp-Endpoints = 1.2.3.4:51820, 1.2.3.4:443, wss://x.example/.well-known/transwarp\n" +
+                    "PrivateKey = yAnz5TF+lXXJte14tji3zlMNq+hd2rYUIgJBgB3fBmk=\nAddress = 10.8.0.2/32\n\n" +
+                    "[Peer]\nPublicKey = $hub\nEndpoint = 1.2.3.4:51820\nAllowedIPs = 10.8.0.1/32\n\n" +
+                    "[Peer]\nPublicKey = TrMvSoP4jYQlY6RIzBgbssQqY3vxI2Pi+y71lOWWXX0=\nEndpoint = 5.6.7.8:51820\nAllowedIPs = 10.9.0.1/32\n"
+            )
+        // what importTunnelConfigs stores, read back
+        val stored = com.zaneschepke.wireguardautotunnel.domain.model.TunnelConfig.fromConfig(
+            com.wgtunnel.parser.Config.parseQuickString(conf), "t")
+        val t = stored.copy(quickConfig = com.wgtunnel.parser.Config.parseQuickString(stored.quickConfig).asQuickString())
+        assertEquals(listOf("1.2.3.4:51820", "1.2.3.4:443", "wss://x.example/.well-known/transwarp"), t.endpointLadder())
+        assertEquals(listOf("127.0.0.1:5000", "5.6.7.8:51820"), t.getRunConfig("127.0.0.1:5000").peers.map { it.endpoint })
+        assertEquals(listOf("1.2.3.4:51820", "5.6.7.8:51820"), t.getRunConfig().peers.map { it.endpoint })
+        // plain tunnel: ladder is just its Endpoint, so the feature stays inert
+        val plain = com.zaneschepke.wireguardautotunnel.domain.model.TunnelConfig(name = "p",
+            quickConfig = "[Interface]\nPrivateKey = yAnz5TF+lXXJte14tji3zlMNq+hd2rYUIgJBgB3fBmk=\nAddress = 10.8.0.2/32\n\n[Peer]\nPublicKey = $hub\nEndpoint = 9.9.9.9:51820\nAllowedIPs = 0.0.0.0/0\n")
+        assertEquals(listOf("9.9.9.9:51820"), plain.endpointLadder())
+    }
+
+    @Test
     fun insertsPrivateKeyAfterInterface() {
         val out = MeshEnroll.insertPrivateKey("# hi\n[Interface]\nAddress = 10.1.0.2/32\n\n[Peer]\nPublicKey = x", "PRIV")
         assertEquals("# hi\n[Interface]\nPrivateKey = PRIV\nAddress = 10.1.0.2/32\n\n[Peer]\nPublicKey = x", out)

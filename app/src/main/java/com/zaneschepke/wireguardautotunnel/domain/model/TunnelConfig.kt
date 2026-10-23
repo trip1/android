@@ -8,6 +8,7 @@ import com.wgtunnel.parser.crypto.Key
 import com.zaneschepke.wireguardautotunnel.data.entity.TunnelConfig.Companion.GLOBAL_CONFIG_NAME
 import com.zaneschepke.wireguardautotunnel.ui.state.TunnelSummary
 import com.zaneschepke.wireguardautotunnel.util.extensions.defaultName
+import com.zaneschepke.wireguardautotunnel.util.network.MeshEnroll
 
 data class TunnelConfig(
     val id: Int = 0,
@@ -35,8 +36,24 @@ data class TunnelConfig(
         return Config.parseQuickString(quickConfig)
     }
 
-    /** Config handed to the backend: stored conf, routed through every peer when [isExitNode]. */
-    fun getRunConfig(): Config = getConfig().let { if (isExitNode) it.withFullTunnel() else it }
+    /** Mesh endpoint ladder (UDP entries, then wss://); a plain tunnel's ladder is just its Endpoint. */
+    fun endpointLadder(): List<String> =
+        MeshEnroll.endpointLadder(quickConfig).ifEmpty {
+            listOfNotNull(runCatching { getConfig() }.getOrNull()?.peers?.firstNotNullOfOrNull { it.endpoint })
+        }
+
+    /**
+     * Config handed to the backend: stored conf with the hub Endpoint (ladder entry 0) swapped for
+     * [endpoint], routed through every peer when [isExitNode].
+     */
+    fun getRunConfig(endpoint: String? = null): Config {
+        var c = getConfig()
+        if (endpoint != null) {
+            val hub = endpointLadder().firstOrNull()
+            c = c.copy(peers = c.peers.map { if (it.endpoint == hub) it.copy(endpoint = endpoint) else it })
+        }
+        return if (isExitNode) c.withFullTunnel() else c
+    }
 
     val isGlobalConfig: Boolean
         get() = name == GLOBAL_CONFIG_NAME

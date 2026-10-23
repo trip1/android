@@ -57,6 +57,7 @@ object MeshEnroll {
             when {
                 l.startsWith("[") -> name = null
                 NAME_COMMENT.matches(l) -> name = NAME_COMMENT.find(l)!!.groupValues[1].trim()
+                LADDER.matches(l) -> header += l
                 l.startsWith("PublicKey", true) && name != null ->
                     header += "# Peer ${l.substringAfter('=').trim()} = $name"
             }
@@ -70,6 +71,12 @@ object MeshEnroll {
             PEER_NAME.matchEntire(c.trim())?.groupValues?.takeIf { it[1] == publicKey }?.get(2)?.trim()
         }
 
+    /** gofire's ordered `# Transwarp-Endpoints = a, b, wss://c` (hoisted to the header), or empty. */
+    fun endpointLadder(conf: String): List<String> =
+        conf.lineSequence().firstNotNullOfOrNull { LADDER.matchEntire(it.trim()) }
+            ?.groupValues?.get(1)?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
+
+    private val LADDER = Regex("""#\s*Transwarp-Endpoints\s*=\s*(.+)""", RegexOption.IGNORE_CASE)
     private val NAME_COMMENT = Regex("""#\s*Name\s*=\s*(.+)""", RegexOption.IGNORE_CASE)
     private val PEER_NAME = Regex("""#\s*Peer\s+(\S+)\s+=\s*(.+)""")
 
