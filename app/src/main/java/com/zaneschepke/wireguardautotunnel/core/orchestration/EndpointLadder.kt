@@ -45,14 +45,18 @@ class EndpointLadder(
         return bridge?.let { "127.0.0.1:${it.port}" } ?: entry.takeIf { step > 0 }
     }
 
-    /** After a successful start: no handshake in time -> [next] with the following step. */
-    fun watch(tunnel: TunnelConfig, next: suspend (Int) -> Unit) {
+    /**
+     * After a successful start: no handshake in time -> [next] with the following step. Handshakes are only seen
+     * through stats polls, so the wait covers two poll periods on top of [STEP_TIMEOUT] (a 10 s battery-saver poll
+     * otherwise stepped down off a working UDP path before the first poll).
+     */
+    fun watch(tunnel: TunnelConfig, pollIntervalSec: Int, next: suspend (Int) -> Unit) {
         val run = runs[tunnel.id] ?: return
         if (run.step >= tunnel.endpointLadder().lastIndex) return
         run.job =
             scope.launch {
                 val ok =
-                    withTimeoutOrNull(STEP_TIMEOUT) {
+                    withTimeoutOrNull(STEP_TIMEOUT + (2 * pollIntervalSec.coerceAtLeast(1)).seconds) {
                         status.first { s ->
                             s.activeTunnels[tunnel.id]?.activeConfig?.peers.orEmpty().any {
                                 (it.lastHandshakeSeconds ?: 0) > 0

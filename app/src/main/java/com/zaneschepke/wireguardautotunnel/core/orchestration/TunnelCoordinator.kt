@@ -373,7 +373,9 @@ class TunnelCoordinator(
                 )
                 // the handshake check reads live stats; without them the ladder stays on its entry
                 if (monitoringSettings.tunnelStatisticsEnabled) {
-                    ladder.watch(tunnelConfig) { restartOnLadder(tunnelConfig.id, it, source) }
+                    ladder.watch(tunnelConfig, monitoringSettings.tunnelStatisticsPollInterval) {
+                        restartOnLadder(tunnelConfig.id, it, source)
+                    }
                 }
                 directPaths.start(tunnelConfig, monitoringSettings.tunnelStatisticsEnabled)
             }
