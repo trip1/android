@@ -25,6 +25,7 @@ import com.zaneschepke.wireguardautotunnel.ui.common.dialog.InfoDialog
 import com.zaneschepke.wireguardautotunnel.ui.common.textbox.ConfigurationTextBox
 import com.zaneschepke.wireguardautotunnel.ui.theme.WireguardAutoTunnelTheme
 import com.zaneschepke.wireguardautotunnel.util.network.Beam
+import com.zaneschepke.wireguardautotunnel.util.network.MeshEnroll
 import com.zaneschepke.wireguardautotunnel.util.network.firstAllowedHost
 import java.io.File
 import kotlinx.coroutines.Dispatchers
@@ -43,10 +44,17 @@ class BeamActivity : ComponentActivity() {
         setContent {
             WireguardAutoTunnelTheme {
                 val status by tunnelCoordinator.backendStatus.collectAsState()
+                // host -> label: hoisted gofire peer names resolve as <name>.mesh via MagicDNS
                 val peers =
                     status.activeTunnels.values
-                        .flatMap { it.activeConfig?.peers.orEmpty() }
-                        .mapNotNull { firstAllowedHost(it.allowedIPs) }
+                        .flatMap { t ->
+                            t.activeConfig?.peers.orEmpty().mapNotNull { p ->
+                                firstAllowedHost(p.allowedIPs)?.let { host ->
+                                    host to (t.mode?.config?.headerComments
+                                        ?.let { MeshEnroll.peerName(it, p.publicKey) }?.let { "$it.mesh" } ?: host)
+                                }
+                            }
+                        }
                         .distinct()
                 var manual by remember { mutableStateOf("") }
                 InfoDialog(
@@ -55,11 +63,11 @@ class BeamActivity : ComponentActivity() {
                     body = {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (peers.isEmpty()) Text(stringResource(R.string.beam_no_peers))
-                            peers.forEach { host -> TextButton(onClick = { beam(host) }) { Text(host) } }
+                            peers.forEach { (host, label) -> TextButton(onClick = { beam(host) }) { Text(label) } }
                             ConfigurationTextBox(
                                 value = manual,
                                 label = stringResource(R.string.beam_manual_ip),
-                                hint = "10.0.0.2",
+                                hint = "pi-5-1.mesh",
                                 onValueChange = { manual = it.trim() },
                             )
                         }

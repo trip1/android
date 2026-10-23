@@ -728,8 +728,8 @@
     <string name="beam_received">Transwarp Beam received</string>
     <string name="beam_received_desc">%1$s from %2$s saved to Downloads</string>
     <string name="beam_via_transwarp">Beam via Transwarp</string>
-    <string name="beam_no_peers">No active tunnel peers. Enter a mesh IP below.</string>
-    <string name="beam_manual_ip">Peer IP</string>
+    <string name="beam_no_peers">No active tunnel peers. Enter a mesh name or IP below.</string>
+    <string name="beam_manual_ip">Peer name.mesh or IP</string>
     <string name="beam_send">Beam</string>
     <string name="beam_sent">Beamed to %1$s</string>
     <string name="beam_failed">Beam failed: %1$s</string>
