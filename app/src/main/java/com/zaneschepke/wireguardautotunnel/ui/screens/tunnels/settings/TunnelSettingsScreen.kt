@@ -28,6 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.zaneschepke.wireguardautotunnel.R
+import com.zaneschepke.wireguardautotunnel.core.orchestration.EndpointLadder
+import androidx.compose.runtime.collectAsState
 import com.zaneschepke.wireguardautotunnel.domain.enums.TunnelMode
 import com.zaneschepke.wireguardautotunnel.ui.LocalNavController
 import com.zaneschepke.wireguardautotunnel.ui.common.button.SurfaceRow
@@ -86,7 +88,11 @@ fun TunnelSettingsScreen(
                     stringResource(R.string.mesh_sensor_array),
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
-                MeshSensorArray(active, remember(tunnel.quickConfig) { runCatching { tunnel.getConfig() }.getOrNull() })
+                MeshSensorArray(
+                    active,
+                    remember(tunnel.quickConfig) { runCatching { tunnel.getConfig() }.getOrNull() },
+                    EndpointLadder.routes.collectAsState().value[tunnel.id],
+                )
             }
         }
         Column {

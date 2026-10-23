@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.TravelExplore
 import androidx.compose.material.icons.rounded.Circle
 import androidx.compose.material.icons.rounded.ExpandLess
@@ -35,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,6 +58,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.wgtunnel.backend.state.ActiveTunnel
 import com.zaneschepke.wireguardautotunnel.R
+import com.zaneschepke.wireguardautotunnel.core.orchestration.EndpointLadder
 import com.zaneschepke.wireguardautotunnel.domain.model.TunnelConfig
 import com.zaneschepke.wireguardautotunnel.ui.LocalIsAndroidTV
 import com.zaneschepke.wireguardautotunnel.ui.LocalNavController
@@ -426,6 +429,7 @@ private fun ListRow(
             val activeTunnel = uiState.backendStatus.activeTunnels[tunnel.id] ?: ActiveTunnel()
             val displayState = remember(activeTunnel) { DisplayTunnelState.from(activeTunnel) }
             val isRunning = uiState.backendStatus.activeTunnels.containsKey(tunnel.id)
+            val route = EndpointLadder.routes.collectAsState().value[tunnel.id]
             val selected =
                 remember(uiState.selectedTunnels) {
                     uiState.selectedTunnels.any { it.id == tunnel.id }
@@ -447,7 +451,7 @@ private fun ListRow(
                     )
                 },
                 title = tunnel.name,
-                description = tunnelRowDescription(tunnel, uiState),
+                description = tunnelRowDescription(tunnel, uiState, route),
                 onClick = {
                     when {
                         uiState.isReorderMode -> Unit
@@ -500,13 +504,23 @@ private fun ListRow(
 private fun tunnelRowDescription(
     tunnel: TunnelConfig,
     uiState: TunnelsUiState,
+    route: String?,
 ): (@Composable () -> Unit)? {
     val entryName =
         tunnel.entryTunnelId?.let { id -> uiState.tunnels.firstOrNull { it.id == id }?.name }
     val latency = uiState.pingLatencies[tunnel.id]
-    if (entryName == null && latency == null) return null
+    if (entryName == null && latency == null && route == null) return null
     return {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            if (route != null) {
+                AssistChip(
+                    onClick = {},
+                    label = { Text(text = route, style = MaterialTheme.typography.bodySmall) },
+                    leadingIcon = {
+                        Icon(Icons.Outlined.Route, contentDescription = null, modifier = Modifier.size(16.dp))
+                    },
+                )
+            }
             if (entryName != null) {
                 val navController = LocalNavController.current
                 AssistChip(

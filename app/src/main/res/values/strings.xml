@@ -565,6 +565,7 @@
     <string name="remote_control">Remote control</string>
     <string name="remote_control_desc">Allow other apps (like Tasker) to control tunnels</string>
     <string name="endpoint_template">endpoint: %1$s</string>
+    <string name="route_template">route: %1$s</string>
 
     <string name="encrypted">Encrypted</string>
     <string name="confirm_password">Confirm password</string>

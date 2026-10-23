@@ -37,7 +37,7 @@ private const val OFFLINE_AFTER_SECONDS = 180L
 
 /** Mesh Sensor Array: every peer of an active tunnel with handshake age, traffic and live RTT. */
 @Composable
-fun MeshSensorArray(active: ActiveConfig, stored: Config?) {
+fun MeshSensorArray(active: ActiveConfig, stored: Config?, route: String? = null) {
     val context = LocalContext.current
     val clipboard = rememberClipboardHelper()
     val networkUtils: NetworkUtils = koinInject()
@@ -88,6 +88,7 @@ fun MeshSensorArray(active: ActiveConfig, stored: Config?) {
                     if (name != null && host != null) StatText(host, style, color)
                     peer.endpoint?.let {
                         StatText(stringResource(R.string.endpoint_template, it), style, color)
+                        route?.let { r -> StatText(stringResource(R.string.route_template, r), style, color) }
                     }
                     StatText(
                         stringResource(

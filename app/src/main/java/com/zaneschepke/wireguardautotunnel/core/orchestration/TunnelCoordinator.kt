@@ -5,6 +5,7 @@ import com.wgtunnel.backend.model.BackendMode
 import com.wgtunnel.parser.AmneziaConfigNormalizer
 import com.wgtunnel.parser.Config
 import com.wgtunnel.parser.ConfigReconciler
+import com.zaneschepke.networkmonitor.NetworkMonitor
 import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.core.event.TunnelErrorEvent
 import com.zaneschepke.wireguardautotunnel.core.tunnel.TunnelProvider
@@ -34,7 +35,9 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -57,6 +60,7 @@ class TunnelCoordinator(
     proxyRepository: ProxySettingsRepository,
     lockdownModeRepository: LockdownSettingsRepository,
     private val appStateRepository: AppStateRepository,
+    networkMonitor: NetworkMonitor,
     scope: CoroutineScope,
 ) {
 
@@ -105,7 +109,21 @@ class TunnelCoordinator(
 
     val backendStatus = tunnelProvider.backendStatus
 
+    private val ladder =
+        EndpointLadder(scope, backendStatus) {
+            networkMonitor.connectivityStateFlow.value?.activeNetwork?.network
+        }
+
     init {
+        // new network: whatever blocked UDP may be gone, so fallen-back tunnels climb back to entry 0
+        scope.launch {
+            networkMonitor.connectivityStateFlow
+                .filterNotNull()
+                .map { it.activeNetwork.key() }
+                .distinctUntilChanged()
+                .drop(1)
+                .collect { ladder.steppedDown().forEach { restartOnLadder(it, 0, TunnelActionSource.USER) } }
+        }
         scope.launch {
             combine(
                     runtimeSettingsSnapshot,
@@ -253,9 +271,18 @@ class TunnelCoordinator(
             stopActiveTunnelsInternal(source, persistLastActive = true)
         }
 
+    private suspend fun restartOnLadder(id: Int, step: Int, source: TunnelActionSource) =
+        tunnelMutex.withLock {
+            if (!backendStatus.value.activeTunnels.containsKey(id)) return@withLock
+            val config = tunnelRepository.getById(id) ?: return@withLock
+            stopTunnelInternal(id, source)
+            startTunnelInternal(config, source, step)
+        }
+
     private suspend fun startTunnelInternal(
         tunnelConfig: TunnelConfig,
         source: TunnelActionSource,
+        ladderStep: Int = 0,
     ) {
 
         val snapshot = getSnapshot()
@@ -265,7 +292,7 @@ class TunnelCoordinator(
         val monitoringSettings = snapshot.monitoring
         val lockdownSettings = snapshot.lockdown
 
-        var config = tunnelConfig.getRunConfig()
+        var config = tunnelConfig.getRunConfig(ladder.prepare(tunnelConfig, ladderStep))
 
         // makes sure Amnezia configs are 2.0 compatible
         config = AmneziaConfigNormalizer.ensureAmneziaCompatibility(config)
@@ -297,6 +324,7 @@ class TunnelCoordinator(
                 TunnelMode.VPN -> {
 
                     if (!serviceManager.hasVpnPermission()) {
+                        ladder.stop(tunnelConfig.id)
                         _errors.emit(TunnelErrorEvent.VpnPermissionDenied(tunnelConfig.id))
                         return
                     }
@@ -338,8 +366,13 @@ class TunnelCoordinator(
                 replaceLastActiveTunnelIds(
                     tunnelProvider.backendStatus.value.activeTunnels.keys + tunnelConfig.id
                 )
+                // the handshake check reads live stats; without them the ladder stays on its entry
+                if (monitoringSettings.tunnelStatisticsEnabled) {
+                    ladder.watch(tunnelConfig) { restartOnLadder(tunnelConfig.id, it, source) }
+                }
             }
             .onFailure {
+                ladder.stop(tunnelConfig.id)
                 Timber.e(it)
                 _errors.emit(TunnelErrorEvent.from(it, tunnelConfig.id))
             }
@@ -466,6 +499,7 @@ class TunnelCoordinator(
         }
 
     private suspend fun stopTunnelInternal(id: Int, source: TunnelActionSource) {
+        ladder.stop(id)
         tunnelProvider
             .stopTunnel(id)
             .onSuccess {
@@ -484,6 +518,7 @@ class TunnelCoordinator(
         val active = tunnelProvider.backendStatus.value.activeTunnels
 
         active.keys.forEach { id ->
+            ladder.stop(id)
             _actions.emit(TunnelActionEvent.Stopped(tunnelId = id, source = source))
         }
 
