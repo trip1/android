@@ -2,12 +2,15 @@ package com.zaneschepke.wireguardautotunnel.core.tunnel
 
 import com.wgtunnel.backend.Backend
 import com.wgtunnel.backend.Tunnel
+import com.wgtunnel.backend.TunnelBackend
 import com.wgtunnel.backend.model.BackendMode
 import com.wgtunnel.backend.model.dns.TunnelDnsConfig
 import com.wgtunnel.backend.state.BackendStatus
 import com.wgtunnel.parser.Config
+import com.wgtunnel.parser.PeerSection
 import com.zaneschepke.wireguardautotunnel.domain.model.LockdownSettings
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -64,5 +67,18 @@ class TunnelBackendProvider(
 
     override suspend fun updateTunnel(tunnel: Tunnel): Result<Unit> {
         return backend.updateTunnel(tunnel)
+    }
+
+    // Backend has no public peer update; its engine does (UAPI replace_peers, used by its own recovery). Fields kept
+    // by name in proguard-rules.pro.
+    override suspend fun updatePeers(tunnelId: Int, peers: List<PeerSection>): Result<Unit> = runCatching {
+        fun field(name: String) = TunnelBackend::class.java.getDeclaredField(name).apply { isAccessible = true }.get(backend)
+        // TunnelEngine is Kotlin-internal: call its suspend updatePeers(handle, mode, peers) reflectively
+        val engine = field("engine")
+        val handle = (field("byTunnelId") as Map<*, *>)[tunnelId] as? Int ?: error("tunnel $tunnelId not running")
+        val mode = backendStatus.value.activeTunnels[tunnelId]?.mode ?: error("tunnel $tunnelId has no mode")
+        val m = engine.javaClass.methods.first { it.name == "updatePeers" && it.parameterCount == 4 }
+        suspendCoroutineUninterceptedOrReturn<Any?> { cont -> m.invoke(engine, handle, mode, peers, cont) }
+        Unit
     }
 }

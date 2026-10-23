@@ -115,6 +115,8 @@ class TunnelCoordinator(
             networkMonitor.connectivityStateFlow.value?.activeNetwork?.network
         }
 
+    private val directPaths = DirectPaths(scope, backendStatus, tunnelProvider)
+
     init {
         // new network: whatever blocked UDP may be gone, so fallen-back tunnels climb back to entry 0
         scope.launch {
@@ -373,6 +375,7 @@ class TunnelCoordinator(
                 if (monitoringSettings.tunnelStatisticsEnabled) {
                     ladder.watch(tunnelConfig) { restartOnLadder(tunnelConfig.id, it, source) }
                 }
+                directPaths.start(tunnelConfig, monitoringSettings.tunnelStatisticsEnabled)
             }
             .onFailure {
                 ladder.stop(tunnelConfig.id)
@@ -503,6 +506,7 @@ class TunnelCoordinator(
 
     private suspend fun stopTunnelInternal(id: Int, source: TunnelActionSource) {
         ladder.stop(id)
+        directPaths.stop(id)
         tunnelProvider
             .stopTunnel(id)
             .onSuccess {
@@ -522,6 +526,7 @@ class TunnelCoordinator(
 
         active.keys.forEach { id ->
             ladder.stop(id)
+            directPaths.stop(id)
             _actions.emit(TunnelActionEvent.Stopped(tunnelId = id, source = source))
         }
 

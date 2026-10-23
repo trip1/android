@@ -9,7 +9,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Circle
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -20,7 +25,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.lifecycleScope
+import com.zaneschepke.wireguardautotunnel.core.orchestration.DirectPaths
 import com.zaneschepke.wireguardautotunnel.core.orchestration.TunnelCoordinator
+import com.zaneschepke.wireguardautotunnel.ui.theme.AlertRed
+import com.zaneschepke.wireguardautotunnel.ui.theme.SilverTree
 import com.zaneschepke.wireguardautotunnel.ui.common.dialog.InfoDialog
 import com.zaneschepke.wireguardautotunnel.ui.common.textbox.ConfigurationTextBox
 import com.zaneschepke.wireguardautotunnel.ui.theme.WireguardAutoTunnelTheme
@@ -44,9 +52,11 @@ class BeamActivity : ComponentActivity() {
         setContent {
             WireguardAutoTunnelTheme {
                 val status by tunnelCoordinator.backendStatus.collectAsState()
+                val directory = DirectPaths.directories.collectAsState().value
+                    .filterKeys { it in status.activeTunnels }.values.firstOrNull()
                 // host -> label: hoisted gofire peer names resolve as <name>.mesh via MagicDNS
                 val peers =
-                    status.activeTunnels.values
+                    if (directory != null) emptyList() else status.activeTunnels.values
                         .flatMap { t ->
                             t.activeConfig?.peers.orEmpty().mapNotNull { p ->
                                 firstAllowedHost(p.allowedIPs)?.let { host ->
@@ -62,8 +72,19 @@ class BeamActivity : ComponentActivity() {
                     title = stringResource(R.string.beam_via_transwarp),
                     body = {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (peers.isEmpty()) Text(stringResource(R.string.beam_no_peers))
+                            if (peers.isEmpty() && directory == null) Text(stringResource(R.string.beam_no_peers))
                             peers.forEach { (host, label) -> TextButton(onClick = { beam(host) }) { Text(label) } }
+                            directory?.devices?.filter { it.meshIp != directory.selfIp }?.forEach { d ->
+                                TextButton(onClick = { beam(d.meshIp) }) {
+                                    Icon(
+                                        Icons.Rounded.Circle,
+                                        contentDescription = stringResource(if (d.online) R.string.peer_online else R.string.peer_offline),
+                                        tint = if (d.online) SilverTree else AlertRed,
+                                        modifier = Modifier.size(12.dp),
+                                    )
+                                    Text("  ${d.name}.mesh  ${d.meshIp}")
+                                }
+                            }
                             ConfigurationTextBox(
                                 value = manual,
                                 label = stringResource(R.string.beam_manual_ip),
