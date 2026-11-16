@@ -213,6 +213,8 @@ androidComponents {
 dependencies {
     implementation(project(":logcatter"))
     implementation(project(":networkmonitor"))
+    // Nebula engine (gomobile bind of nebula-mobile/, rebuild with nebula-mobile/build.sh)
+    implementation(files("libs/nebula-mobile.aar"))
     implementation(libs.bundles.wgtunnel.core)
 
     // Core foundations

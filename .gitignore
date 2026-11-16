@@ -72,3 +72,6 @@ app/release/output.json
 # where we keep our signing secrets locally
 /.kotlin/
 /app/keystore/
+
+# Nebula engine, prebuilt by nebula-mobile/build.sh
+!app/libs/nebula-mobile.aar
