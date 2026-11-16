@@ -60,6 +60,8 @@ class NebulaVpnService : VpnService() {
             p.network.split('/').let { (a, b) -> builder.addRoute(a, b.toInt()) }
             if (p.isClient) {
                 p.routes.forEach { r -> r.cidr.split('/').let { (a, b) -> builder.addRoute(a, b.toInt()) } }
+                // exit: like WireGuard's ::/0, IPv6 goes into the tunnel and dies there (the hub has no v6) instead of leaking
+                if (p.routes.any { it.cidr == Nebula.DEFAULT_ROUTE }) builder.addRoute("::", 0)
                 if (p.dns.isNotBlank()) builder.addDnsServer(p.dns)
             }
             val fd = builder.establish() ?: error("VPN permission revoked")

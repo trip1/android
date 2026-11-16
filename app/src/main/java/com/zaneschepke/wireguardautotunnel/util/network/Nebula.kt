@@ -47,6 +47,14 @@ object Nebula {
     ) {
         val isLighthouse get() = role != ROLE_CLIENT
         val isClient get() = role != ROLE_LIGHTHOUSE
+        /** gofire granted an internet exit (Phase 32): the profile routes 0.0.0.0/0 via the hub. */
+        val hasExit get() = routes.any { it.cidr == DEFAULT_ROUTE }
+
+        /**
+         * Full Warp off drops gofire's exit route. Without an exit grant there is none to keep: the hub would drop
+         * that traffic, so the toggle can't black-hole the internet.
+         */
+        fun forRun(fullWarp: Boolean): Profile = if (fullWarp) this else copy(routes = routes.filter { it.cidr != DEFAULT_ROUTE })
 
         /** 10.90.200.7/16 -> 10.90.0.0/16, the Nebula network routed into the VPN. */
         val network: String
@@ -58,6 +66,7 @@ object Nebula {
             }
     }
 
+    const val DEFAULT_ROUTE = "0.0.0.0/0"
     const val ROLE_CLIENT = "client"
     const val ROLE_LIGHTHOUSE = "lighthouse"
     const val ROLE_BOTH = "both"

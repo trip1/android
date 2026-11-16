@@ -476,7 +476,7 @@ private fun ListRow(
                         { viewModel.toggleSelectedTunnel(tunnel.id) }
                     },
                 trailing = { rowModifier ->
-                    if (!tunnel.isNebula) IconButton(onClick = { viewModel.setExitNode(tunnel, !tunnel.isExitNode) }) {
+                    IconButton(onClick = { viewModel.setExitNode(tunnel, !tunnel.isExitNode) }) {
                         Icon(
                             Icons.Outlined.TravelExplore,
                             contentDescription = stringResource(R.string.full_warp),

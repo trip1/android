@@ -37,10 +37,13 @@ data class TunnelConfig(
 
     fun toSummary() = TunnelSummary(id = id, name = name)
 
-    /** Nebula config for the stored profile and role; the X25519 private key lives in [quickConfig]. */
+    /** Profile as run: Full Warp ([isExitNode]) decides the default route. */
+    fun nebulaRunProfile(): Nebula.Profile = Nebula.parse(nebulaProfile).forRun(isExitNode)
+
+    /** Nebula config for the run profile and role; the X25519 private key lives in [quickConfig]. */
     fun nebulaYaml(): String =
         Nebula.yaml(
-            Nebula.parse(nebulaProfile),
+            nebulaRunProfile(),
             Nebula.privateKeyPem(java.util.Base64.getDecoder().decode(getConfig().`interface`.privateKey)),
         )
 

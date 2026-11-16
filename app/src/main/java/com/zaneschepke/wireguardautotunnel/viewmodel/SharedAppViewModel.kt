@@ -688,7 +688,11 @@ class SharedAppViewModel(
                 ?.let { old -> Nebula.encode(Nebula.parse(result.nebulaProfile).copy(role = old.role, listenPort = old.listenPort)) }
                 ?: result.nebulaProfile
             if (existing != null) {
-                val updated = existing.copy(quickConfig = parsed.asQuickString(), nebulaProfile = profile)
+                // a Nebula renewal that newly grants an exit turns Full Warp on; one that drops it turns it off
+                val exitNow = code.nebula && profile.isNotEmpty() && Nebula.parse(profile).hasExit
+                val exitBefore = existing.isNebula && Nebula.parse(existing.nebulaProfile).hasExit
+                val updated = existing.copy(quickConfig = parsed.asQuickString(), nebulaProfile = profile,
+                    isExitNode = if (code.nebula && exitNow != exitBefore) exitNow else existing.isExitNode)
                 tunnelRepository.save(updated)
                 if (tunnelCoordinator.backendStatus.value.activeTunnels.containsKey(existing.id)) {
                     tunnelCoordinator.stopTunnel(existing.id)
@@ -699,7 +703,8 @@ class SharedAppViewModel(
                 val (shiftedGroups, shiftedTunnels) = shiftRootPositionsBy(ui.groups, ui.tunnels, 1)
                 tunnelGroupRepository.saveAll(shiftedGroups)
                 if (shiftedTunnels.isNotEmpty()) tunnelRepository.updateAll(shiftedTunnels)
-                val tunnel = TunnelConfig(name = result.name ?: "gofire-nebula", quickConfig = parsed.asQuickString(), nebulaProfile = profile)
+                val tunnel = TunnelConfig(name = result.name ?: "gofire-nebula", quickConfig = parsed.asQuickString(), nebulaProfile = profile,
+                    isExitNode = Nebula.parse(profile).hasExit)
                 tunnelRepository.saveTunnelsUniquely(listOf(tunnel), state.tunnelNames.map { it.value })
             } else importTunnelConfigs(mapOf(result.config to (result.name ?: "gofire-mesh")))
             postSideEffect(

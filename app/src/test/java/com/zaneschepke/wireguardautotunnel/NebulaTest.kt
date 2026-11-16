@@ -113,4 +113,17 @@ class NebulaTest {
         assertEquals("relay 10.90.0.1", tab.endpoint)
         assertEquals(1700000099L, tab.lastHandshakeSeconds) // idle but established: "now"
     }
+
+    // Phase 32 exit: gofire's 0.0.0.0/0 route is kept only with Full Warp on, and never invented without a grant
+    @Test
+    fun fullWarpFollowsExitGrant() {
+        val granted = Nebula.parse(enrollNebula).let { it.copy(routes = it.routes + Nebula.Route("0.0.0.0/0", "10.90.0.1")) }
+        assertTrue(granted.hasExit)
+        assertEquals(3, granted.forRun(true).routes.size)
+        assertEquals(listOf("10.89.0.0/16", "10.0.0.0/16"), granted.forRun(false).routes.map { it.cidr })
+        val plain = Nebula.parse(enrollNebula)
+        assertEquals(plain.routes, plain.forRun(true).routes)
+        val routes = Json.parseToJsonElement(Nebula.yaml(granted.forRun(true), key)).jsonObject.at("tun.unsafe_routes").jsonArray
+        assertTrue(routes.any { it.jsonObject["route"]!!.jsonPrimitive.content == "0.0.0.0/0" })
+    }
 }

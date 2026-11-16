@@ -65,7 +65,14 @@ fun TunnelSettingsScreen(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
     ) {
         if (tunnel.isNebula) {
-            // WireGuard-only settings (conf, multihop, split, Full Warp, IPv6, DDNS) don't apply
+            // WireGuard-only settings (conf, multihop, split, IPv6, DDNS) don't apply
+            SurfaceRow(
+                leading = { Icon(Icons.Outlined.TravelExplore, contentDescription = null) },
+                title = stringResource(R.string.full_warp),
+                description = { DescriptionText(stringResource(R.string.full_warp_nebula_desc)) },
+                trailing = { ThemedSwitch(tunnel.isExitNode, onClick = { viewModel.onExitNode(it) }) },
+                onClick = { viewModel.onExitNode(!tunnel.isExitNode) },
+            )
             uiState.activeConfig?.let { active ->
                 Column {
                     GroupLabel(stringResource(R.string.mesh_sensor_array), modifier = Modifier.padding(horizontal = 16.dp))

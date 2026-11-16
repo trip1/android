@@ -450,7 +450,7 @@ class TunnelCoordinator(
             stopActiveTunnelsInternal(source, persistLastActive = false)
         }
         runCatching { tunnelConfig.nebulaYaml() }
-            .mapCatching { serviceManager.startNebula(tunnelConfig.id, tunnelConfig.name, tunnelConfig.nebulaProfile, it).getOrThrow() }
+            .mapCatching { serviceManager.startNebula(tunnelConfig.id, tunnelConfig.name, Nebula.encode(tunnelConfig.nebulaRunProfile()), it).getOrThrow() }
             .onSuccess {
                 _actions.emit(TunnelActionEvent.Started(tunnelId = tunnelConfig.id, source = source))
                 replaceLastActiveTunnelIds(setOf(tunnelConfig.id))

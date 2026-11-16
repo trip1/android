@@ -710,6 +710,7 @@
         <item quantity="other">Move %d tunnels</item>
     </plurals>
     <string name="full_warp">Full Warp (exit node)</string>
+    <string name="full_warp_nebula_desc">Send all internet traffic out through the hub. Takes effect once gofire grants this device an exit (mesh client set NAME --exit=true, then renew)</string>
     <string name="full_warp_desc">Route all traffic through this tunnel\'s peers (0.0.0.0/0, ::/0) without changing the saved config</string>
     <string name="enroll_with_code">Enroll with code</string>
     <string name="enroll_description">Starfleet Provisioning: paste the transwarp://enroll code from your mesh controller. A WireGuard key is generated on this device and never leaves it.</string>
