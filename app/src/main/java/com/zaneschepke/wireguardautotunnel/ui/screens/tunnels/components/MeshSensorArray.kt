@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import chat.warpsignal.nebmobile.Nebmobile
 import com.wgtunnel.parser.ActiveConfig
 import com.wgtunnel.parser.Config
 import com.zaneschepke.wireguardautotunnel.R
@@ -30,11 +31,13 @@ import com.zaneschepke.wireguardautotunnel.ui.theme.LcarsCrimson
 import com.zaneschepke.wireguardautotunnel.ui.theme.SilverTree
 import com.zaneschepke.wireguardautotunnel.util.extensions.abbreviateKey
 import com.zaneschepke.wireguardautotunnel.util.extensions.toAgoDisplay
+import com.zaneschepke.wireguardautotunnel.util.network.Nebula
 import com.zaneschepke.wireguardautotunnel.util.network.NetworkUtils
 import com.zaneschepke.wireguardautotunnel.util.network.MeshEnroll
 import com.zaneschepke.wireguardautotunnel.util.network.firstAllowedHost
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 
 private const val OFFLINE_AFTER_SECONDS = 180L
@@ -77,6 +80,7 @@ fun MeshSensorArray(active: ActiveConfig, stored: Config?, route: String? = null
         val storedPeer = stored?.peers?.firstOrNull { it.publicKey == peer.publicKey }
         val name = stored?.let { MeshEnroll.peerName(it.headerComments, peer.publicKey) }
             ?: directory?.devices?.firstOrNull { it.publicKey == peer.publicKey }?.name
+            ?: peer.publicKey.takeIf { stored == null } // Nebula: the host's cert name stands in for the key
         val lan = MeshEnroll.lanRoutes(storedPeer?.allowedIPs)
         // hub peer carries the client range: online peers clients not on a direct path go through it
         val viaHub = if (storedPeer?.allowedIPs?.contains("10.89.200.0/21") == true)
@@ -87,10 +91,13 @@ fun MeshSensorArray(active: ActiveConfig, stored: Config?, route: String? = null
                 if (host == null) return@produceState
                 while (true) {
                     value =
-                        runCatching { networkUtils.pingWithStats(host, 1) }
-                            .getOrNull()
-                            ?.takeIf { it.isReachable }
-                            ?.rttAvg
+                        if (stored == null) { // Nebula: the app is off its own VPN, so ping through the engine
+                            withContext(Nebula.dispatcher) { Nebmobile.ping(host, 2000).toDouble() }.takeIf { it >= 0 }
+                        } else
+                            runCatching { networkUtils.pingWithStats(host, 1) }
+                                .getOrNull()
+                                ?.takeIf { it.isReachable }
+                                ?.rttAvg
                     delay(10.seconds)
                 }
             }

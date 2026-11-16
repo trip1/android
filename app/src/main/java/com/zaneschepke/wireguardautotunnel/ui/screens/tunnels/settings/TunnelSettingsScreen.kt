@@ -66,6 +66,12 @@ fun TunnelSettingsScreen(
     ) {
         if (tunnel.isNebula) {
             // WireGuard-only settings (conf, multihop, split, Full Warp, IPv6, DDNS) don't apply
+            uiState.activeConfig?.let { active ->
+                Column {
+                    GroupLabel(stringResource(R.string.mesh_sensor_array), modifier = Modifier.padding(horizontal = 16.dp))
+                    MeshSensorArray(active, null, null, tunnel.id)
+                }
+            }
             NebulaSettings(tunnel.nebulaProfile, uiState.isRunning) { role, port -> viewModel.onNebula(role, port) }
             return@Column
         }

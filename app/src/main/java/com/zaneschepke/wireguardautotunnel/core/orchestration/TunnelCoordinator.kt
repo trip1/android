@@ -35,7 +35,11 @@ import com.zaneschepke.wireguardautotunnel.service.ServiceManager
 import com.zaneschepke.wireguardautotunnel.util.StringValue
 import com.zaneschepke.wireguardautotunnel.util.extensions.toTunnelDnsConfigOrNull
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -53,7 +57,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import com.zaneschepke.wireguardautotunnel.util.network.Nebula
+import com.wgtunnel.parser.ActiveConfig
+import chat.warpsignal.nebmobile.Nebmobile
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class TunnelCoordinator(
     private val tunnelProvider: TunnelProvider,
     private val serviceManager: ServiceManager,
@@ -113,12 +126,30 @@ class TunnelCoordinator(
             initialValue = null,
         )
 
-    /** WireGuard backend status plus the running Nebula tunnel (no stats: activeConfig stays null for it). */
+    /** Nebula Status() as an ActiveConfig, polled at the monitoring interval while a Nebula tunnel runs. */
+    private val nebulaStats: Flow<ActiveConfig?> =
+        combine(NebulaVpnService.active, runtimeSettingsSnapshotState) { neb, snap -> neb to snap?.monitoring }
+            .flatMapLatest { (neb, mon) ->
+                flow {
+                    emit(null)
+                    if (neb == null || mon?.tunnelStatisticsEnabled != true) return@flow
+                    val ip = tunnelRepository.getById(neb.first)?.takeIf { it.isNebula }
+                        ?.let { Nebula.parse(it.nebulaProfile).ip } ?: return@flow
+                    while (true) {
+                        val st = withContext(Nebula.dispatcher) { runCatching { Nebmobile.status() }.getOrNull() }
+                        emit(st?.let { runCatching { Nebula.activeConfig(it, ip, System.currentTimeMillis() / 1000) }.getOrNull() })
+                        delay(mon.tunnelStatisticsPollInterval.coerceAtLeast(1).seconds)
+                    }
+                }.flowOn(Dispatchers.IO)
+            }
+
+    /** WireGuard backend status plus the running Nebula tunnel, its hosts as peers. */
     val backendStatus: StateFlow<BackendStatus> =
-        combine(tunnelProvider.backendStatus, NebulaVpnService.active) { s, neb ->
+        combine(tunnelProvider.backendStatus, NebulaVpnService.active, nebulaStats) { s, neb, stats ->
                 if (neb == null) s
                 else s.copy(activeTunnels = s.activeTunnels + (neb.first to
-                    ActiveTunnel(transportState = Tunnel.State.Up.Healthy, uptime = neb.second)))
+                    ActiveTunnel(transportState = Tunnel.State.Up.Healthy, uptime = neb.second, activeConfig = stats,
+                        lastStatsAtMs = if (stats != null) System.currentTimeMillis() else 0L)))
             }
             .stateIn(scope, SharingStarted.Eagerly, tunnelProvider.backendStatus.value)
 

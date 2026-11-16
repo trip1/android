@@ -50,7 +50,7 @@ fun NebulaSettings(profileJson: String, isRunning: Boolean, onChange: (role: Str
         val status by
             produceState<JsonObject?>(null, profileJson) {
                 while (true) {
-                    value = withContext(Dispatchers.IO) {
+                    value = withContext(Nebula.dispatcher) {
                         runCatching { Json.parseToJsonElement(Nebmobile.status()).jsonObject }.getOrNull()
                     }
                     delay(3.seconds)

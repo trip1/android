@@ -45,7 +45,7 @@ class NebulaVpnService : VpnService() {
         // ponytail: Nebula starts on the main thread (no DNS in our configs, ~ms); move off it if starts get slow
         val result = runCatching {
             val p = Nebula.parse(intent.getStringExtra(EXTRA_PROFILE)!!)
-            Nebmobile.stop()
+            Nebula.call { Nebmobile.stop() }
             tun?.close()
             tun = null
             val (addr, bits) = p.ip.split('/')
@@ -64,7 +64,7 @@ class NebulaVpnService : VpnService() {
             }
             val fd = builder.establish() ?: error("VPN permission revoked")
             tun = fd
-            Nebmobile.start(intent.getStringExtra(EXTRA_YAML)!!, fd.fd.toLong())
+            Nebula.call { Nebmobile.start(intent.getStringExtra(EXTRA_YAML)!!, fd.fd.toLong()) }
             _active.value = id to System.currentTimeMillis()
         }
         result.onFailure {
@@ -84,7 +84,7 @@ class NebulaVpnService : VpnService() {
     }
 
     private fun shutdown(startId: Int? = null) {
-        Nebmobile.stop()
+        Nebula.call { Nebmobile.stop() }
         tun?.close()
         tun = null
         _active.value = null

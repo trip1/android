@@ -98,4 +98,19 @@ class NebulaTest {
         assertTrue(MeshEnroll.expiresInDays(stored, 0)!! > 0)
         assertEquals("yAnz5TF+lXXJte14tji3zlMNq+hd2rYUIgJBgB3fBmk=", com.wgtunnel.parser.Config.parseQuickString(stored).`interface`.privateKey)
     }
+
+    // nebmobile Status() hosts become Sensor Array peers: cert name, current remote or relay, counters
+    @Test
+    fun statusAsActiveConfig() {
+        val st = """{"running":true,"hosts":[
+            {"vpn_addrs":["10.90.0.1"],"name":"pi-5-1","remote":"10.0.1.201:4242","rx_bytes":1200,"tx_bytes":800,"last_rx":1700000000},
+            {"vpn_addrs":["10.90.200.4"],"name":"trona-tablet","relays":["10.90.0.1"],"rx_bytes":0,"tx_bytes":0}]}"""
+        val a = Nebula.activeConfig(st, "10.90.200.7/16", 1700000099)
+        assertEquals("10.90.200.7/16", a.interfaceSection.address)
+        val (hub, tab) = a.peers
+        assertEquals(listOf("pi-5-1", "10.90.0.1/32", "10.0.1.201:4242"), listOf(hub.publicKey, hub.allowedIPs, hub.endpoint))
+        assertEquals(listOf(1200L, 800L, 1700000000L), listOf(hub.rxBytes, hub.txBytes, hub.lastHandshakeSeconds))
+        assertEquals("relay 10.90.0.1", tab.endpoint)
+        assertEquals(1700000099L, tab.lastHandshakeSeconds) // idle but established: "now"
+    }
 }
