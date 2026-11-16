@@ -1,7 +1,10 @@
 package com.zaneschepke.wireguardautotunnel.core.orchestration
 
 import com.dokar.sonner.ToastType
+import com.wgtunnel.backend.Tunnel
 import com.wgtunnel.backend.model.BackendMode
+import com.wgtunnel.backend.state.ActiveTunnel
+import com.wgtunnel.backend.state.BackendStatus
 import com.wgtunnel.parser.AmneziaConfigNormalizer
 import com.wgtunnel.parser.Config
 import com.wgtunnel.parser.ConfigReconciler
@@ -27,12 +30,14 @@ import com.zaneschepke.wireguardautotunnel.domain.repository.MonitoringSettingsR
 import com.zaneschepke.wireguardautotunnel.domain.repository.ProxySettingsRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelRepository
 import com.zaneschepke.wireguardautotunnel.domain.sideeffect.GlobalSideEffect
+import com.zaneschepke.wireguardautotunnel.service.NebulaVpnService
 import com.zaneschepke.wireguardautotunnel.service.ServiceManager
 import com.zaneschepke.wireguardautotunnel.util.StringValue
 import com.zaneschepke.wireguardautotunnel.util.extensions.toTunnelDnsConfigOrNull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -108,7 +113,18 @@ class TunnelCoordinator(
             initialValue = null,
         )
 
-    val backendStatus = tunnelProvider.backendStatus
+    /** WireGuard backend status plus the running Nebula tunnel (no stats: activeConfig stays null for it). */
+    val backendStatus: StateFlow<BackendStatus> =
+        combine(tunnelProvider.backendStatus, NebulaVpnService.active) { s, neb ->
+                if (neb == null) s
+                else s.copy(activeTunnels = s.activeTunnels + (neb.first to
+                    ActiveTunnel(transportState = Tunnel.State.Up.Healthy, uptime = neb.second)))
+            }
+            .stateIn(scope, SharingStarted.Eagerly, tunnelProvider.backendStatus.value)
+
+    /** Running tunnel ids without [backendStatus]'s stateIn lag, for decisions under [tunnelMutex]. */
+    private fun activeIds(): Set<Int> =
+        tunnelProvider.backendStatus.value.activeTunnels.keys + listOfNotNull(NebulaVpnService.active.value?.first)
 
     private val ladder =
         EndpointLadder(scope, backendStatus) {
@@ -127,7 +143,10 @@ class TunnelCoordinator(
                 // stepping down with no network at all would only climb back down the ladder
                 .filter { it != "none" }
                 .drop(1)
-                .collect { ladder.steppedDown().forEach { restartOnLadder(it, 0, TunnelActionSource.USER) } }
+                .collect {
+                    serviceManager.rebindNebula()
+                    ladder.steppedDown().forEach { restartOnLadder(it, 0, TunnelActionSource.USER) }
+                }
         }
         scope.launch {
             combine(
@@ -154,7 +173,7 @@ class TunnelCoordinator(
                         LiveTunnelFeaturePayload(
                             general = snapshot.general,
                             monitoring = snapshot.monitoring,
-                            tunnels = tunnels.filter { it.id in activeIds },
+                            tunnels = tunnels.filter { it.id in activeIds && !it.isNebula },
                         )
                 }
                 .distinctUntilChangedBy { it.first }
@@ -235,7 +254,7 @@ class TunnelCoordinator(
     // enforce single tunnel, for now. We do not clear the last active here as start success
     // replaces it
     private suspend fun startExclusive(config: TunnelConfig, source: TunnelActionSource) {
-        if (backendStatus.value.activeTunnels.isNotEmpty()) {
+        if (activeIds().isNotEmpty()) {
             stopActiveTunnelsInternal(source, persistLastActive = false)
         }
 
@@ -289,6 +308,9 @@ class TunnelCoordinator(
         source: TunnelActionSource,
         ladderStep: Int = 0,
     ) {
+        if (tunnelConfig.isNebula) return startNebula(tunnelConfig, source)
+        // one VPN at a time
+        NebulaVpnService.active.value?.let { stopTunnelInternal(it.first, source) }
 
         val snapshot = getSnapshot()
         val settings = snapshot.general
@@ -386,6 +408,28 @@ class TunnelCoordinator(
             }
     }
 
+    // ponytail: Nebula ignores the tunnel mode (always VpnService), lockdown, the ladder and live stats
+    private suspend fun startNebula(tunnelConfig: TunnelConfig, source: TunnelActionSource) {
+        if (!serviceManager.hasVpnPermission()) {
+            _errors.emit(TunnelErrorEvent.VpnPermissionDenied(tunnelConfig.id))
+            return
+        }
+        // one VPN at a time
+        if (tunnelProvider.backendStatus.value.activeTunnels.isNotEmpty()) {
+            stopActiveTunnelsInternal(source, persistLastActive = false)
+        }
+        runCatching { tunnelConfig.nebulaYaml() }
+            .mapCatching { serviceManager.startNebula(tunnelConfig.id, tunnelConfig.name, tunnelConfig.nebulaProfile, it).getOrThrow() }
+            .onSuccess {
+                _actions.emit(TunnelActionEvent.Started(tunnelId = tunnelConfig.id, source = source))
+                replaceLastActiveTunnelIds(setOf(tunnelConfig.id))
+            }
+            .onFailure {
+                Timber.e(it, "Nebula start failed")
+                _errors.emit(TunnelErrorEvent.InternalFailure(tunnelConfig.id, it.message ?: "Nebula start failed"))
+            }
+    }
+
     private suspend fun resolveOuterConfig(
         exit: TunnelConfig,
         globalConfig: Config?,
@@ -438,8 +482,7 @@ class TunnelCoordinator(
     }
 
     suspend fun restartActiveTunnels() = tunnelMutex.withLock {
-        val configs =
-            backendStatus.value.activeTunnels.keys.mapNotNull { tunnelRepository.getById(it) }
+        val configs = activeIds().mapNotNull { tunnelRepository.getById(it) }
         if (configs.isEmpty()) return@withLock
         stopActiveTunnelsInternal(TunnelActionSource.USER, persistLastActive = true)
         configs.forEach { startTunnelInternal(it, TunnelActionSource.USER) }
@@ -464,8 +507,7 @@ class TunnelCoordinator(
             markUserOverride()
         }
 
-        val isActive =
-            tunnelProvider.backendStatus.value.activeTunnels.keys.contains(tunnelConfig.id)
+        val isActive = tunnelConfig.id in activeIds()
         if (isActive) {
             stopTunnelInternal(tunnelConfig.id, source)
             return@withLock
@@ -480,11 +522,11 @@ class TunnelCoordinator(
                 markUserOverride()
             }
 
-            val active = tunnelProvider.backendStatus.value.activeTunnels
+            val active = activeIds()
             if (active.isNotEmpty()) {
-                lastActiveTunnels = active.keys.toList()
+                lastActiveTunnels = active.toList()
 
-                active.keys.forEach { id ->
+                active.forEach { id ->
                     _actions.emit(TunnelActionEvent.Stopped(tunnelId = id, source = source))
                 }
 
@@ -507,6 +549,12 @@ class TunnelCoordinator(
         }
 
     private suspend fun stopTunnelInternal(id: Int, source: TunnelActionSource) {
+        if (id == NebulaVpnService.active.value?.first) {
+            serviceManager.stopNebula()
+            _actions.emit(TunnelActionEvent.Stopped(tunnelId = id, source = source))
+            replaceLastActiveTunnelIds(tunnelProvider.backendStatus.value.activeTunnels.keys)
+            return
+        }
         ladder.stop(id)
         directPaths.stop(id)
         tunnelProvider
@@ -530,6 +578,10 @@ class TunnelCoordinator(
             ladder.stop(id)
             directPaths.stop(id)
             _actions.emit(TunnelActionEvent.Stopped(tunnelId = id, source = source))
+        }
+        NebulaVpnService.active.value?.let {
+            serviceManager.stopNebula()
+            _actions.emit(TunnelActionEvent.Stopped(tunnelId = it.first, source = source))
         }
 
         tunnelProvider.stopActiveTunnels()

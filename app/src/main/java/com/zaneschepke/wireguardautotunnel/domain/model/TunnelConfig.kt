@@ -9,6 +9,7 @@ import com.zaneschepke.wireguardautotunnel.data.entity.TunnelConfig.Companion.GL
 import com.zaneschepke.wireguardautotunnel.ui.state.TunnelSummary
 import com.zaneschepke.wireguardautotunnel.util.extensions.defaultName
 import com.zaneschepke.wireguardautotunnel.util.network.MeshEnroll
+import com.zaneschepke.wireguardautotunnel.util.network.Nebula
 
 data class TunnelConfig(
     val id: Int = 0,
@@ -28,9 +29,20 @@ data class TunnelConfig(
     val groupId: Int? = null,
     val entryTunnelId: Int? = null,
     val isExitNode: Boolean = false,
+    /** "" = WireGuard; else the Nebula profile JSON ([Nebula.Profile]). [quickConfig] is then a peerless placeholder. */
+    val nebulaProfile: String = "",
 ) {
+    val isNebula: Boolean
+        get() = nebulaProfile.isNotEmpty()
 
     fun toSummary() = TunnelSummary(id = id, name = name)
+
+    /** Nebula config for the stored profile and role; the X25519 private key lives in [quickConfig]. */
+    fun nebulaYaml(): String =
+        Nebula.yaml(
+            Nebula.parse(nebulaProfile),
+            Nebula.privateKeyPem(java.util.Base64.getDecoder().decode(getConfig().`interface`.privateKey)),
+        )
 
     fun getConfig(): Config {
         return Config.parseQuickString(quickConfig)

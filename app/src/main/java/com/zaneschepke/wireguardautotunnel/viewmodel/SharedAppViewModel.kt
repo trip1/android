@@ -49,6 +49,7 @@ import com.zaneschepke.wireguardautotunnel.util.extensions.asStringValue
 import com.zaneschepke.wireguardautotunnel.util.extensions.isFileAccessDenied
 import com.zaneschepke.wireguardautotunnel.util.extensions.saveTunnelsUniquely
 import com.zaneschepke.wireguardautotunnel.util.network.MeshEnroll
+import com.zaneschepke.wireguardautotunnel.util.network.Nebula
 import com.zaneschepke.wireguardautotunnel.util.network.NetworkUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.request.prepareGet
@@ -677,17 +678,29 @@ class SharedAppViewModel(
     fun enroll(code: MeshEnroll.Code) = intent {
         try {
             val result = withContext(Dispatchers.IO) { MeshEnroll.enroll(code) }
-            val parsed = Config.parseQuickString(result.config).also { it.validate() }
+            // a Nebula placeholder has no peers to validate
+            val parsed = Config.parseQuickString(result.config).also { if (!code.nebula) it.validate() }
             // renewal of an enrolled device: same Transwarp-Name -> new keys/expiry, same tunnel id and settings
             val name = MeshEnroll.header(result.config, "Name")
             val existing = name?.let { n -> tunnelRepository.getAll().firstOrNull { MeshEnroll.header(it.quickConfig, "Name") == n } }
+            // a renewed Nebula tunnel keeps the role and port the user picked
+            val profile = existing?.takeIf { it.isNebula && code.nebula }?.let { Nebula.parse(it.nebulaProfile) }
+                ?.let { old -> Nebula.encode(Nebula.parse(result.nebulaProfile).copy(role = old.role, listenPort = old.listenPort)) }
+                ?: result.nebulaProfile
             if (existing != null) {
-                val updated = existing.copy(quickConfig = parsed.asQuickString())
+                val updated = existing.copy(quickConfig = parsed.asQuickString(), nebulaProfile = profile)
                 tunnelRepository.save(updated)
                 if (tunnelCoordinator.backendStatus.value.activeTunnels.containsKey(existing.id)) {
                     tunnelCoordinator.stopTunnel(existing.id)
                     tunnelCoordinator.startTunnel(updated)
                 }
+            } else if (code.nebula) {
+                val ui = tunnelsUiState.value
+                val (shiftedGroups, shiftedTunnels) = shiftRootPositionsBy(ui.groups, ui.tunnels, 1)
+                tunnelGroupRepository.saveAll(shiftedGroups)
+                if (shiftedTunnels.isNotEmpty()) tunnelRepository.updateAll(shiftedTunnels)
+                val tunnel = TunnelConfig(name = result.name ?: "gofire-nebula", quickConfig = parsed.asQuickString(), nebulaProfile = profile)
+                tunnelRepository.saveTunnelsUniquely(listOf(tunnel), state.tunnelNames.map { it.value })
             } else importTunnelConfigs(mapOf(result.config to (result.name ?: "gofire-mesh")))
             postSideEffect(
                 GlobalSideEffect.Snackbar(

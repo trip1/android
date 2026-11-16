@@ -11,6 +11,7 @@ import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.settings.ipv6.IPv6
 import com.zaneschepke.wireguardautotunnel.ui.state.AppliedSplitApps
 import com.zaneschepke.wireguardautotunnel.ui.state.TunnelUiState
 import com.zaneschepke.wireguardautotunnel.ui.state.splitAppListSummary
+import com.zaneschepke.wireguardautotunnel.util.network.Nebula
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import org.orbitmvi.orbit.OrbitContainerHost
@@ -44,6 +45,7 @@ class TunnelViewModel(
                             userTunnels = snapshot.tunnels,
                             appliedSplit = appliedSplit(tunnel, snapshot.global, snapshot.settings),
                             activeConfig = snapshot.active?.activeConfig,
+                            isRunning = snapshot.active != null,
                             lastStatsAtMs = snapshot.active?.lastStatsAtMs ?: 0L,
                             isLoading = false,
                         )
@@ -96,6 +98,20 @@ class TunnelViewModel(
         val updated = tunnel.copy(entryTunnelId = entryId)
         tunnelRepository.save(updated)
         if (state.activeConfig != null) {
+            tunnelCoordinator.stopTunnel(tunnelId)
+            tunnelCoordinator.startTunnel(updated)
+        }
+    }
+
+    /** Role / listen port of a Nebula tunnel: re-rendered on the next start, so restart it if it's running. */
+    fun onNebula(role: String = "", listenPort: Int = 0) = intent {
+        val tunnel = state.tunnel?.takeIf { it.isNebula } ?: return@intent
+        val p = Nebula.parse(tunnel.nebulaProfile)
+        val next = p.copy(role = role.ifEmpty { p.role }, listenPort = listenPort.takeIf { it in 1..65535 } ?: p.listenPort)
+        if (next == p) return@intent
+        val updated = tunnel.copy(nebulaProfile = Nebula.encode(next))
+        tunnelRepository.save(updated)
+        if (tunnelCoordinator.backendStatus.value.activeTunnels.containsKey(tunnelId)) {
             tunnelCoordinator.stopTunnel(tunnelId)
             tunnelCoordinator.startTunnel(updated)
         }

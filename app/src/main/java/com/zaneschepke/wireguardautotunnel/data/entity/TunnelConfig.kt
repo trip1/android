@@ -48,6 +48,8 @@ data class TunnelConfig(
     @ColumnInfo(name = "group_id", defaultValue = "NULL") val groupId: Int? = null,
     @ColumnInfo(name = "entry_tunnel_id", defaultValue = "NULL") val entryTunnelId: Int? = null,
     @ColumnInfo(name = "is_exit_node", defaultValue = "0") val isExitNode: Boolean = false,
+    // "" = WireGuard; else the Nebula profile JSON (util.network.Nebula.Profile)
+    @ColumnInfo(name = "nebula_profile", defaultValue = "") val nebulaProfile: String = "",
 ) {
     companion object {
         const val GLOBAL_CONFIG_NAME = "4675ab06-903a-438b-8485-6ea4187a9512"

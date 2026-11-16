@@ -3,6 +3,7 @@ package com.zaneschepke.wireguardautotunnel.service
 import android.content.Context
 import android.content.Intent
 import android.net.VpnService
+import chat.warpsignal.nebmobile.Nebmobile
 import com.zaneschepke.wireguardautotunnel.service.autotunnel.AutoTunnelService
 import com.zaneschepke.wireguardautotunnel.util.permission.NotificationPermissionHelper
 
@@ -14,6 +15,15 @@ class ServiceManager(private val context: Context) {
 
     fun stopAutoTunnelService() {
         context.stopService(Intent(context, AutoTunnelService::class.java))
+    }
+
+    suspend fun startNebula(id: Int, name: String, profileJson: String, yaml: String) =
+        NebulaVpnService.start(context, id, name, profileJson, yaml)
+
+    fun stopNebula() = NebulaVpnService.stop(context)
+
+    fun rebindNebula() {
+        if (NebulaVpnService.active.value != null) Nebmobile.rebind()
     }
 
     fun hasVpnPermission(): Boolean {

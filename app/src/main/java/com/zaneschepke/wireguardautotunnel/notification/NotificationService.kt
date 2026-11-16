@@ -55,6 +55,7 @@ interface NotificationService {
         // for tunnel foreground notification
         const val VPN_NOTIFICATION_ID = 100
         const val PROXY_NOTIFICATION_ID = 103
+        const val NEBULA_NOTIFICATION_ID = 104
         const val TUNNEL_ERROR_NOTIFICATION_ID = 101
         const val TUNNEL_MESSAGES_NOTIFICATION_ID = 102
         const val UPDATE_AVAILABLE_NOTIFICATION_ID = 125

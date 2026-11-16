@@ -233,6 +233,17 @@
             </intent-filter>
         </service>
         <service
+            android:name=".service.NebulaVpnService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            android:permission="android.permission.BIND_VPN_SERVICE">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                      android:value="Runs the Nebula mesh VPN client and shows its persistent connection status."/>
+        </service>
+        <service
             android:name=".service.autotunnel.AutoTunnelService"
             android:enabled="true"
             android:exported="false"

@@ -64,6 +64,11 @@ fun TunnelSettingsScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.Top),
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
     ) {
+        if (tunnel.isNebula) {
+            // WireGuard-only settings (conf, multihop, split, Full Warp, IPv6, DDNS) don't apply
+            NebulaSettings(tunnel.nebulaProfile, uiState.isRunning) { role, port -> viewModel.onNebula(role, port) }
+            return@Column
+        }
         Column {
             GroupLabel(
                 stringResource(R.string.configuration),

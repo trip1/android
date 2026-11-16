@@ -20,11 +20,12 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
-/** Starfleet Provisioning: `transwarp://enroll?u=<https base>&t=<token>&ca=<sha256 hex of CA DER>`. */
+/** Starfleet Provisioning: `transwarp://enroll?u=<https base>&t=<token>&ca=<sha256 hex of CA DER>[&k=nebula]`. */
 object MeshEnroll {
-    data class Code(val baseUrl: String, val token: String, val caSha256: String)
+    data class Code(val baseUrl: String, val token: String, val caSha256: String, val nebula: Boolean = false)
 
-    data class Result(val config: String, val name: String?)
+    /** [nebulaProfile] is set for Nebula codes; [config] is then a peerless placeholder (see [nebulaPlaceholder]). */
+    data class Result(val config: String, val name: String?, val nebulaProfile: String = "")
 
     fun parseCode(raw: String): Code? {
         val uri = runCatching { URI(raw.trim()) }.getOrNull() ?: return null
@@ -38,8 +39,17 @@ object MeshEnroll {
         val t = q["t"]?.takeIf { it.isNotBlank() } ?: return null
         val ca = q["ca"]?.lowercase()?.takeIf { it.matches(Regex("[0-9a-f]{64}")) } ?: return null
         if (!u.startsWith("https://")) return null
-        return Code(u, t, ca)
+        return Code(u, t, ca, q["k"].equals("nebula", true))
     }
+
+    /**
+     * Stored quickConfig of a Nebula tunnel: keeps the private key plus the Transwarp-Name / -Expires headers that
+     * renew-in-place and the expiry warnings already read, and parses like any peerless conf.
+     */
+    fun nebulaPlaceholder(privateKey: String, ip: String, name: String?, expiresAt: String?): String =
+        listOfNotNull(name?.let { "# Transwarp-Name = $it" }, expiresAt?.let { "# Transwarp-Expires = $it" })
+            .plus(listOf("[Interface]", "PrivateKey = $privateKey", "Address = $ip"))
+            .joinToString("\n")
 
     /** Server conf comes without a PrivateKey; ours goes right after `[Interface]`. */
     fun insertPrivateKey(conf: String, privateKey: String): String {
@@ -142,11 +152,20 @@ object MeshEnroll {
             conn.setRequestProperty("Content-Type", "application/json")
             val body = buildJsonObject {
                 put("token", code.token)
-                put("wg_public_key", publicKey)
+                // a Nebula X25519 public key is the same 32 bytes as a WireGuard one
+                put(if (code.nebula) "nebula_public_key" else "wg_public_key", publicKey)
             }
             conn.outputStream.use { it.write(body.toString().toByteArray()) }
-            if (conn.responseCode !in 200..299) error("enroll failed: HTTP ${conn.responseCode}")
+            // gofire's error code (e.g. nebula_unavailable: the token is still valid, retry later)
+            if (conn.responseCode !in 200..299)
+                error("HTTP ${conn.responseCode} ${conn.errorStream?.bufferedReader()?.readText()?.take(200).orEmpty()}".trim())
             val json = Json.parseToJsonElement(conn.inputStream.bufferedReader().readText()).jsonObject
+            val name = json["name"]?.jsonPrimitive?.content
+            if (code.nebula) {
+                val profile = Nebula.encode(Nebula.parse(json["nebula"]?.toString() ?: error("no nebula profile in response")))
+                val expires = json["expires_at"]?.jsonPrimitive?.content
+                return Result(nebulaPlaceholder(privateKey, Nebula.parse(profile).ip, name, expires), name, profile)
+            }
             val conf = json["config"]?.jsonPrimitive?.content ?: error("no config in response")
             return Result(hoistPeerNames(insertPrivateKey(conf, privateKey)), json["name"]?.jsonPrimitive?.content)
         } finally {
