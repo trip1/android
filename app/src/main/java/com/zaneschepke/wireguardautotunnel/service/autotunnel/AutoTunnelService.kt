@@ -4,7 +4,6 @@ import android.content.Intent
 import androidx.core.app.ServiceCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
-import com.wgtunnel.backend.Backend
 import com.wgtunnel.backend.autotunnel.AutoTunnelReconciler
 import com.zaneschepke.networkmonitor.ActiveNetwork
 import com.zaneschepke.networkmonitor.AndroidNetworkMonitor
@@ -59,12 +58,12 @@ class AutoTunnelService : LifecycleService() {
     private val settingsRepository: GeneralSettingRepository by inject()
     private val tunnelsRepository: TunnelRepository by inject()
     private val tunnelCoordinator: TunnelCoordinator by inject()
-    private val backend: Backend by inject()
 
     private val reconciler by lazy {
         AutoTunnelReconciler(
             scope = CoroutineScope(lifecycleScope.coroutineContext + ioDispatcher),
-            status = backend.status,
+            // WireGuard + the running Nebula tunnel; backend.status alone can't see Nebula
+            status = tunnelCoordinator.backendStatus,
             host = AndroidAutoTunnelHost(tunnelCoordinator, tunnelsRepository),
             startupSettle = STARTUP_SETTLE_MS.milliseconds,
         )

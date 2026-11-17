@@ -59,6 +59,30 @@ fun TunnelSettingsScreen(
     if (uiState.isLoading) return
     val tunnel = uiState.tunnel ?: return
 
+    // shared by the Nebula and WireGuard branches: a Nebula tunnel can be the default (tile, shortcuts, auto-tunnel)
+    val primaryRow: @Composable () -> Unit = {
+        SurfaceRow(
+            leading = { Icon(Icons.Outlined.Star, contentDescription = null) },
+            title = stringResource(R.string.primary_tunnel),
+            description = {
+                Text(
+                    text = stringResource(R.string.set_primary_tunnel),
+                    style =
+                        MaterialTheme.typography.bodySmall.copy(
+                            MaterialTheme.colorScheme.outline
+                        ),
+                )
+            },
+            trailing = {
+                ThemedSwitch(
+                    checked = tunnel.isPrimaryTunnel,
+                    onClick = { viewModel.togglePrimaryTunnel() },
+                )
+            },
+            onClick = { viewModel.togglePrimaryTunnel() },
+        )
+    }
+
     Column(
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.Top),
@@ -73,6 +97,7 @@ fun TunnelSettingsScreen(
                 trailing = { ThemedSwitch(tunnel.isExitNode, onClick = { viewModel.onExitNode(it) }) },
                 onClick = { viewModel.onExitNode(!tunnel.isExitNode) },
             )
+            primaryRow()
             uiState.activeConfig?.let { active ->
                 Column {
                     GroupLabel(stringResource(R.string.mesh_sensor_array), modifier = Modifier.padding(horizontal = 16.dp))
@@ -121,26 +146,7 @@ fun TunnelSettingsScreen(
                 stringResource(R.string.general),
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
-            SurfaceRow(
-                leading = { Icon(Icons.Outlined.Star, contentDescription = null) },
-                title = stringResource(R.string.primary_tunnel),
-                description = {
-                    Text(
-                        text = stringResource(R.string.set_primary_tunnel),
-                        style =
-                            MaterialTheme.typography.bodySmall.copy(
-                                MaterialTheme.colorScheme.outline
-                            ),
-                    )
-                },
-                trailing = {
-                    ThemedSwitch(
-                        checked = tunnel.isPrimaryTunnel,
-                        onClick = { viewModel.togglePrimaryTunnel() },
-                    )
-                },
-                onClick = { viewModel.togglePrimaryTunnel() },
-            )
+            primaryRow()
         }
         Column {
             GroupLabel(
