@@ -46,6 +46,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.NonCancellable
 import kotlin.time.Duration.Companion.minutes
 import com.zaneschepke.wireguardautotunnel.util.network.MeshEnroll
 import kotlinx.coroutines.flow.distinctUntilChangedBy
@@ -215,8 +216,11 @@ class TunnelCoordinator(
             if (reloaded.isSuccess) return expiresMs.also { Timber.i("Nebula ${t.name} reloaded in place") }
             Timber.i(reloaded.exceptionOrNull(), "Nebula reload refused, restarting")
         }
-        stopTunnel(t.id)
-        startTunnel(updated)
+        // the stop clears NebulaVpnService.active, which cancels this renew loop (collectLatest) before the start
+        withContext(NonCancellable) {
+            stopTunnel(t.id)
+            startTunnel(updated)
+        }
         return expiresMs
     }
 
