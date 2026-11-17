@@ -463,7 +463,11 @@ func Status() string {
 		s.AmLighthouse = cfg.GetBool("lighthouse.am_lighthouse", false)
 		s.ListenPort = cfg.GetInt("listen.port", 0)
 		up := map[netip.Addr]bool{}
+		// listed once per vpn addr: a v2 host (v4 + v6) comes twice
 		for _, h := range ctl.ListHostmapHosts(false) {
+			if len(h.VpnAddrs) == 0 || up[h.VpnAddrs[0]] {
+				continue
+			}
 			e := host{VpnAddrs: h.VpnAddrs, Relays: h.CurrentRelaysToMe}
 			if h.CurrentRemote.IsValid() {
 				e.Remote = h.CurrentRemote.String()
