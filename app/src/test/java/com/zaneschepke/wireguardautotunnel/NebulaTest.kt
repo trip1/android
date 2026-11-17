@@ -35,6 +35,7 @@ class NebulaTest {
         assertEquals("CA", at("pki.ca").jsonPrimitive.content)
         assertEquals("CERT", at("pki.cert").jsonPrimitive.content)
         assertEquals(key, at("pki.key").jsonPrimitive.content)
+        assertTrue(at("pki.disconnect_invalid").jsonPrimitive.boolean)
         assertEquals(listOf("180.181.68.247:4242", "10.0.1.219:4242"), at("static_host_map").jsonObject["10.90.0.1"]!!.jsonArray.map { it.jsonPrimitive.content })
         assertEquals(2, at("static_host_map").jsonObject.size)
         assertTrue(at("punchy.punch").jsonPrimitive.boolean && at("punchy.respond").jsonPrimitive.boolean)
@@ -55,6 +56,19 @@ class NebulaTest {
         assertEquals("10.90.0.1", c.at("tun.unsafe_routes").jsonArray[0].jsonObject["via"]!!.jsonPrimitive.content)
         assertTrue(c.at("relay.use_relays").jsonPrimitive.boolean)
         assertEquals(listOf("10.90.0.1"), c.at("relay.relays").jsonArray.map { it.jsonPrimitive.content })
+    }
+
+    // Phase 36: mini-1 as a second lighthouse + relay
+    @Test
+    fun twoLighthousesTwoRelays() {
+        val p = Nebula.parse(enrollNebula.replace("trona-tablet", "mini-1").replace("10.90.200.4", "10.90.0.2")
+            .replace("\"203.0.113.5:4242\"", "\"10.0.3.3:4243\",\"180.181.68.247:4243\"")
+            .replace("\"role\":\"client\"", "\"role\":\"client\",\"relays\":[\"10.90.0.1\",\"10.90.0.2\"]"))
+        val c = Json.parseToJsonElement(Nebula.yaml(p, key)).jsonObject
+        assertEquals(listOf("10.0.3.3:4243", "180.181.68.247:4243"), c.at("static_host_map").jsonObject["10.90.0.2"]!!.jsonArray.map { it.jsonPrimitive.content })
+        assertEquals(listOf("10.90.0.1", "10.90.0.2"), c.at("lighthouse.hosts").jsonArray.map { it.jsonPrimitive.content })
+        assertEquals(listOf("10.90.0.1", "10.90.0.2"), c.at("relay.relays").jsonArray.map { it.jsonPrimitive.content })
+        assertTrue(c.at("relay.use_relays").jsonPrimitive.boolean)
     }
 
     @Test

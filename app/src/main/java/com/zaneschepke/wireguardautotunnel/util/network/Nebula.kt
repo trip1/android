@@ -57,6 +57,8 @@ object Nebula {
         val exits: List<Exit> = emptyList(),
         /** The user's exit pick (an [exits] ip); "" or no longer offered = the hub. App-side, kept across renews. */
         @SerialName("exit_via") val exitVia: String = "",
+        /** Phase 36: relay ips (both hubs); empty from an older gofire = the first lighthouse (the hub). */
+        val relays: List<String> = emptyList(),
     ) {
         val isLighthouse get() = role != ROLE_CLIENT
         val isClient get() = role != ROLE_LIGHTHOUSE
@@ -171,7 +173,7 @@ object Nebula {
      * YAML quoting.
      */
     fun yaml(p: Profile, privateKeyPem: String): String {
-        val hub = p.lighthouses.firstOrNull()?.ip // gofire lists the hub first
+        val relays = p.relays.ifEmpty { listOfNotNull(p.lighthouses.firstOrNull()?.ip) } // gofire lists the hub first
         return buildJsonObject {
                 putJsonObject("pki") {
                     put("ca", p.caPem)
@@ -179,6 +181,7 @@ object Nebula {
                     put("key", privateKeyPem)
                     // a v2 cert (has ip6) initiates v2 handshakes; a v1-only cert must stay on v1 (Nebula refuses 2)
                     if (p.ip6.isNotBlank()) put("initiating_version", 2)
+                    put("disconnect_invalid", true)
                 }
                 if (p.preferredRanges.isNotEmpty()) putJsonArray("preferred_ranges") { p.preferredRanges.forEach { add(it) } }
                 putJsonObject("static_host_map") {
@@ -198,7 +201,7 @@ object Nebula {
                 }
                 putJsonObject("relay") {
                     put("use_relays", p.isClient)
-                    putJsonArray("relays") { if (p.isClient && hub != null) add(hub) }
+                    putJsonArray("relays") { if (p.isClient) relays.forEach { add(it) } }
                 }
                 putJsonObject("tun") {
                     put("mtu", MTU)
