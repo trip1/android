@@ -737,6 +737,7 @@
     <string name="rtt_template">rtt: %1$s</string>
     <string name="copy_ip">Copy IP</string>
     <string name="key_expires_in">key expires in %1$d d</string>
+    <string name="nebula_exit">Exit (Full Warp)</string>
     <string name="key_renews_automatically">key renews automatically</string>
     <string name="key_expired">key expired: renew in the mesh dashboard</string>
     <string name="key_expiry_title">Transwarp key expiring</string>

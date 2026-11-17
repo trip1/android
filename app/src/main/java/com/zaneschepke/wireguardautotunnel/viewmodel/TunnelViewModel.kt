@@ -104,10 +104,11 @@ class TunnelViewModel(
     }
 
     /** Role / listen port of a Nebula tunnel: re-rendered on the next start, so restart it if it's running. */
-    fun onNebula(role: String = "", listenPort: Int = 0) = intent {
+    fun onNebula(role: String = "", listenPort: Int = 0, exitVia: String? = null) = intent {
         val tunnel = state.tunnel?.takeIf { it.isNebula } ?: return@intent
         val p = Nebula.parse(tunnel.nebulaProfile)
-        val next = p.copy(role = role.ifEmpty { p.role }, listenPort = listenPort.takeIf { it in 1..65535 } ?: p.listenPort)
+        val next = p.copy(role = role.ifEmpty { p.role }, listenPort = listenPort.takeIf { it in 1..65535 } ?: p.listenPort,
+            exitVia = exitVia ?: p.exitVia)
         if (next == p) return@intent
         val updated = tunnel.copy(nebulaProfile = Nebula.encode(next))
         tunnelRepository.save(updated)

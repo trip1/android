@@ -9,6 +9,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Hub
 import androidx.compose.material.icons.outlined.Lan
 import androidx.compose.material.icons.outlined.Sensors
+import androidx.compose.material.icons.outlined.TravelExplore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -44,7 +45,12 @@ import kotlinx.serialization.json.jsonPrimitive
 
 /** Nebula tunnel settings: status (when running), role picker, listen port, read-only lighthouse list. */
 @Composable
-fun NebulaSettings(profileJson: String, isRunning: Boolean, onChange: (role: String, listenPort: Int) -> Unit) {
+fun NebulaSettings(
+    profileJson: String,
+    isRunning: Boolean,
+    onExit: (ip: String) -> Unit,
+    onChange: (role: String, listenPort: Int) -> Unit,
+) {
     val p = remember(profileJson) { Nebula.parse(profileJson) }
     if (isRunning) {
         val status by
@@ -83,6 +89,23 @@ fun NebulaSettings(profileJson: String, isRunning: Boolean, onChange: (role: Str
                     }
                 },
             )
+        }
+    }
+    // Phase 35: exit clients pick which exit carries Full Warp (the hub when unset)
+    if (p.exits.size > 1) {
+        Column {
+            GroupLabel(stringResource(R.string.nebula_exit), modifier = Modifier.padding(horizontal = 16.dp))
+            val picked = p.exitIp ?: p.exits.first().ip
+            p.exits.forEach { e ->
+                SurfaceRow(
+                    leading = { Icon(Icons.Outlined.TravelExplore, contentDescription = null) },
+                    title = "${e.name.ifEmpty { e.ip }} · ${e.ip}",
+                    trailing = {
+                        if (e.ip == picked) Icon(Icons.Outlined.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    },
+                    onClick = { if (e.ip != picked) onExit(if (e.ip == p.exits.first().ip) "" else e.ip) },
+                )
+            }
         }
     }
     Column {

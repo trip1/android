@@ -683,9 +683,9 @@ class SharedAppViewModel(
             // renewal of an enrolled device: same Transwarp-Name -> new keys/expiry, same tunnel id and settings
             val name = MeshEnroll.header(result.config, "Name")
             val existing = name?.let { n -> tunnelRepository.getAll().firstOrNull { MeshEnroll.header(it.quickConfig, "Name") == n } }
-            // a renewed Nebula tunnel keeps the role and port the user picked
+            // a renewed Nebula tunnel keeps the role, port and exit the user picked
             val profile = existing?.takeIf { it.isNebula && code.nebula }?.let { Nebula.parse(it.nebulaProfile) }
-                ?.let { old -> Nebula.encode(Nebula.parse(result.nebulaProfile).copy(role = old.role, listenPort = old.listenPort)) }
+                ?.let { old -> Nebula.encode(Nebula.parse(result.nebulaProfile).withChoicesOf(old)) }
                 ?: result.nebulaProfile
             if (existing != null) {
                 // a Nebula renewal that newly grants an exit turns Full Warp on; one that drops it turns it off

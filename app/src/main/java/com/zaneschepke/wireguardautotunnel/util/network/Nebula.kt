@@ -8,6 +8,7 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -33,6 +34,8 @@ object Nebula {
 
     @Serializable data class Route(val cidr: String, val via: String)
 
+    @Serializable data class Exit(val name: String = "", val ip: String)
+
     /** Stored as the tunnel's `nebula_profile` JSON; [role] and [listenPort] are the user's choice afterwards. */
     @Serializable
     data class Profile(
@@ -48,6 +51,12 @@ object Nebula {
         val ip6: String = "",
         /** Underlay ranges Nebula prefers when two members share a LAN (gofire Phase 34). */
         @SerialName("preferred_ranges") val preferredRanges: List<String> = emptyList(),
+        /** Phase 35: this member's Nebula firewall.inbound, verbatim; empty = allow all. */
+        @SerialName("firewall_inbound") val firewallInbound: List<JsonObject> = emptyList(),
+        /** Phase 35: exits an exit client may pick (the hub first). */
+        val exits: List<Exit> = emptyList(),
+        /** The user's exit pick (an [exits] ip); "" or no longer offered = the hub. App-side, kept across renews. */
+        @SerialName("exit_via") val exitVia: String = "",
     ) {
         val isLighthouse get() = role != ROLE_CLIENT
         val isClient get() = role != ROLE_LIGHTHOUSE
@@ -58,7 +67,15 @@ object Nebula {
          * Full Warp off drops gofire's exit route. Without an exit grant there is none to keep: the hub would drop
          * that traffic, so the toggle can't black-hole the internet.
          */
-        fun forRun(fullWarp: Boolean): Profile = if (fullWarp) this else copy(routes = routes.filter { it.cidr != DEFAULT_ROUTE })
+        fun forRun(fullWarp: Boolean): Profile =
+            if (!fullWarp) copy(routes = routes.filter { it.cidr != DEFAULT_ROUTE })
+            else exitIp?.let { ip -> copy(routes = routes.map { if (it.cidr == DEFAULT_ROUTE) it.copy(via = ip) else it }) } ?: this
+
+        /** The picked exit's ip while gofire still offers it, else null (= the profile's own route, the hub). */
+        val exitIp: String? get() = exitVia.takeIf { v -> v.isNotEmpty() && exits.any { it.ip == v } }
+
+        /** A renewed profile keeps what the user picked on this device. */
+        fun withChoicesOf(old: Profile) = copy(role = old.role, listenPort = old.listenPort, exitVia = old.exitVia)
 
         /** 10.90.200.7/16 -> 10.90.0.0/16, the Nebula network routed into the VPN. */
         val network: String get() = networkOf(ip)
@@ -196,7 +213,8 @@ object Nebula {
                         put("host", "any")
                     }
                     putJsonArray("outbound") { add(any) }
-                    putJsonArray("inbound") { add(any) }
+                    // gofire's group rules (Phase 35); no rules = allow all
+                    putJsonArray("inbound") { if (p.firewallInbound.isEmpty()) add(any) else p.firewallInbound.forEach { add(it) } }
                 }
                 putJsonObject("logging") { put("level", "info") }
             }

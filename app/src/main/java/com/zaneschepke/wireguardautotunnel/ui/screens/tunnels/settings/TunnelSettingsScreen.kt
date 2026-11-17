@@ -79,7 +79,9 @@ fun TunnelSettingsScreen(
                     MeshSensorArray(active, null, null, tunnel.id)
                 }
             }
-            NebulaSettings(tunnel.nebulaProfile, uiState.isRunning) { role, port -> viewModel.onNebula(role, port) }
+            NebulaSettings(tunnel.nebulaProfile, uiState.isRunning, onExit = { viewModel.onNebula(exitVia = it) }) { role, port ->
+                viewModel.onNebula(role, port)
+            }
             return@Column
         }
         Column {

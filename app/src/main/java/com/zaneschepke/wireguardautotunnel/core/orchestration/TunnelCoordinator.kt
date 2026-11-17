@@ -197,7 +197,7 @@ class TunnelCoordinator(
         val key = t.getConfig().`interface`.privateKey
         val (json, expires) = withContext(Dispatchers.IO) { MeshEnroll.renewNebula(old.dns, Config.generatePublicKeyFromPrivateKey(key)) }
         val expiresMs = expires?.let { runCatching { java.time.OffsetDateTime.parse(it).toInstant().toEpochMilli() }.getOrNull() }
-        val fresh = Nebula.parse(json).copy(role = old.role, listenPort = old.listenPort)
+        val fresh = Nebula.parse(json).withChoicesOf(old)
         val quick = Config.parseQuickString(
             MeshEnroll.nebulaPlaceholder(key, fresh.ip, MeshEnroll.header(t.quickConfig, "Name"), expires)).asQuickString()
         if (fresh == old && quick == t.quickConfig) return expiresMs

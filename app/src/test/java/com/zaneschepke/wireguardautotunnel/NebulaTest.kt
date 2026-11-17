@@ -157,4 +157,25 @@ class NebulaTest {
         assertTrue(!p.sameVpn(p.copy(ip6 = "fdee:6e65:6275:6c61::c8:7/64"))) // v1 -> v2 renew restarts (new address)
         assertEquals("10.90.200.7/16", p.addresses)
     }
+
+    // Phase 35: firewall_inbound verbatim (none = allow all); the exit pick re-routes 0.0.0.0/0 and survives a renew
+    @Test
+    fun firewallAndExitPicker() {
+        val exitJson = enrollNebula.replace("\"routes\":[", "\"routes\":[{\"cidr\":\"0.0.0.0/0\",\"via\":\"10.90.0.1\"},")
+            .replace("\"role\"", "\"firewall_inbound\":[{\"proto\":\"icmp\",\"port\":\"any\",\"host\":\"any\"},{\"proto\":\"tcp\",\"port\":\"7449\",\"group\":\"family\"}]," +
+                "\"exits\":[{\"name\":\"pi-5-1\",\"ip\":\"10.90.0.1\"},{\"name\":\"zz-exit-vm\",\"ip\":\"10.90.200.12\"}],\"role\"")
+        val p = Nebula.parse(exitJson)
+        val inbound = Json.parseToJsonElement(Nebula.yaml(p, key)).jsonObject.at("firewall.inbound").jsonArray
+        assertEquals(listOf("icmp", "tcp"), inbound.map { it.jsonObject["proto"]!!.jsonPrimitive.content })
+        assertEquals("family", inbound[1].jsonObject["group"]!!.jsonPrimitive.content)
+        assertEquals("any", render("client").at("firewall.inbound").jsonArray.single().jsonObject["host"]!!.jsonPrimitive.content)
+        fun via(q: Nebula.Profile) = Json.parseToJsonElement(Nebula.yaml(q, key)).jsonObject.at("tun.unsafe_routes").jsonArray
+            .map { it.jsonObject }.firstOrNull { it["route"]!!.jsonPrimitive.content == "0.0.0.0/0" }?.get("via")?.jsonPrimitive?.content
+        assertEquals("10.90.0.1", via(p.forRun(true))) // default: the hub
+        val picked = p.copy(exitVia = "10.90.200.12")
+        assertEquals("10.90.200.12", via(picked.forRun(true)))
+        assertEquals(null, via(picked.forRun(false))) // Full Warp off: no default route at all
+        assertEquals("10.90.0.1", via(picked.copy(exits = p.exits.take(1)).forRun(true))) // exit withdrawn: back to the hub
+        assertEquals("10.90.200.12", Nebula.parse(exitJson).withChoicesOf(Nebula.parse(Nebula.encode(picked))).exitVia)
+    }
 }
