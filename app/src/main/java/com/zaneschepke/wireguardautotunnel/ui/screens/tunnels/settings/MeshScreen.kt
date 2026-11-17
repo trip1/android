@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.NetworkCheck
 import androidx.compose.material.icons.outlined.PowerSettingsNew
@@ -29,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import chat.warpsignal.nebmobile.Nebmobile
 import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.core.orchestration.DirectPaths
+import com.zaneschepke.wireguardautotunnel.ui.LocalNavController
+import com.zaneschepke.wireguardautotunnel.ui.navigation.Route
 import com.zaneschepke.wireguardautotunnel.ui.common.button.SurfaceRow
 import com.zaneschepke.wireguardautotunnel.ui.common.label.GroupLabel
 import com.zaneschepke.wireguardautotunnel.ui.common.text.DescriptionText
@@ -66,6 +69,16 @@ fun MeshScreen(viewModel: TunnelViewModel) {
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
     ) {
         if (dir == null) DescriptionText(stringResource(R.string.mesh_waiting), Modifier.padding(horizontal = 16.dp))
+        // Phase 38: only for clients the hub marks admin (directory self.admin)
+        if (dir?.selfAdmin == true) {
+            val navController = LocalNavController.current
+            SurfaceRow(
+                leading = { Icon(Icons.Outlined.AdminPanelSettings, contentDescription = null) },
+                title = stringResource(R.string.admin_title),
+                description = { DescriptionText(stringResource(R.string.admin_desc)) },
+                onClick = { navController.push(Route.MeshAdmin(tunnel.id)) },
+            )
+        }
         dir?.services?.takeIf { it.isNotEmpty() }?.let { services ->
             Column {
                 GroupLabel(stringResource(R.string.mesh_services), modifier = Modifier.padding(horizontal = 16.dp))
@@ -86,7 +99,6 @@ fun MeshScreen(viewModel: TunnelViewModel) {
                     SurfaceRow(
                         leading = { Icon(Icons.Outlined.PowerSettingsNew, contentDescription = null) },
                         title = stringResource(R.string.mesh_wake, w.name),
-                        description = { DescriptionText(w.mac) },
                         onClick = {
                             scope.launch {
                                 val r = withContext(Dispatchers.IO) { runCatching { MeshDirectory.wake(hub, w) } }

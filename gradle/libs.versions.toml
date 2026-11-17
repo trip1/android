@@ -3,8 +3,8 @@
 compileSdk = "37"
 minSdk = "26"
 targetSdk = "37"
-versionCode = "51900"
-versionName = "5.19.0"
+versionCode = "52000"
+versionName = "5.20.0"
 jdk = "21"
 accompanist = "0.37.3"
 activityCompose = "1.13.0"
@@ -30,6 +30,7 @@ lifecycle-runtime-compose = "2.11.0"
 material3 = "1.5.0-beta01"
 pinLockCompose = "1.0.5"
 qrose = "1.3.1"
+biometric = "1.1.0"
 roomVersion = "2.8.5"
 semver4j = "3.1.0"
 slf4jAndroid = "1.7.36"
@@ -97,7 +98,7 @@ orbit-mvi = ["orbit-compose", "orbit-viewmodel", "orbit-core"]
 shizuku = ["shizuku-api", "shizuku-provider"]
 
 # UI utilities
-ui-utilities = ["pin-lock-compose", "qrose", "reorderable", "quickie-foss", "androidx-core-splashscreen"]
+ui-utilities = ["pin-lock-compose", "qrose", "androidx-biometric", "reorderable", "quickie-foss", "androidx-core-splashscreen"]
 
 # Misc utilities
 misc-utilities = ["semver4j", "icmp4a", "slf4j-android", "timber"]
@@ -189,6 +190,7 @@ orbit-viewmodel = { module = "org.orbit-mvi:orbit-viewmodel", version.ref = "orb
 # misc
 pin-lock-compose = { module = "com.zaneschepke:pin_lock_compose", version.ref = "pinLockCompose" }
 qrose = { module = "io.github.alexzhirkevich:qrose", version.ref = "qrose" }
+androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
 semver4j = { module = "com.vdurmont:semver4j", version.ref = "semver4j" }
 slf4j-android = { module = "org.slf4j:slf4j-android", version.ref = "slf4jAndroid" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }

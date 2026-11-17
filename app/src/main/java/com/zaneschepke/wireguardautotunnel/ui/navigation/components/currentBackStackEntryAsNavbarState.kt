@@ -50,6 +50,7 @@ import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.Display
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.Dns
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.EntryTunnel
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.Mesh
+import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.MeshAdmin
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.IPv6
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.Language
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.License
@@ -645,6 +646,13 @@ fun currentRouteAsNavbarState(
                     NavbarState(
                         topLeading = { TvBackButton { navController.pop() } },
                         topTitle = context.getString(R.string.mesh_title),
+                        showBottomItems = true,
+                    )
+                }
+                is MeshAdmin -> {
+                    NavbarState(
+                        topLeading = { TvBackButton { navController.pop() } },
+                        topTitle = context.getString(R.string.admin_title),
                         showBottomItems = true,
                     )
                 }

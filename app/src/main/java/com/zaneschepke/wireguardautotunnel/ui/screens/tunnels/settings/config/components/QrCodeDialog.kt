@@ -90,7 +90,7 @@ private fun QrCodeContent(tunnelConfig: TunnelConfig, onDismiss: () -> Unit) {
     }
 }
 
-private fun createQrOptions(): QrOptions = QrOptions {
+internal fun createQrOptions(): QrOptions = QrOptions {
     shapes {
         darkPixel = QrPixelShape.circle()
         ball = QrBallShape.circle()

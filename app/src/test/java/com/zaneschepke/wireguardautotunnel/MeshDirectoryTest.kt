@@ -37,14 +37,16 @@ class MeshDirectoryTest {
     @Test
     fun parsesServicesWolAndAddresses() {
         val d = MeshDirectory.parse("""
-            {"self":{"mesh_ip":"10.90.200.7"},
+            {"self":{"mesh_ip":"10.90.200.7","admin":true},
              "devices":[{"name":"ws","mesh_ip":"10.89.200.9","kind":"client","addresses":["fd00::9/128","10.89.200.9/32"]},
                         {"name":"neb","mesh_ip":"10.90.200.8","kind":"nebula","ip6":"fdee::8"}],
              "services":[{"name":"Grafana","url":"http://grafana.mesh:3000","kind":"app"},{"name":"bad","url":"javascript:x"}],
-             "wol":[{"name":"nas","mac":"aa:bb:cc:dd:ee:ff"}]}
+             "wol":[{"name":"nas"}]}
         """)
         assertEquals(listOf(MeshDirectory.Service("Grafana", "http://grafana.mesh:3000", "app")), d.services)
-        assertEquals(listOf(MeshDirectory.Wol("nas", "aa:bb:cc:dd:ee:ff")), d.wol)
+        assertEquals(listOf(MeshDirectory.Wol("nas")), d.wol)
+        assertEquals(true, d.selfAdmin)
+        assertEquals(false, MeshDirectory.parse(json).selfAdmin)
         // protocol-agnostic Beam target: v4 first, prefix stripped; old hubs fall back to mesh_ip + ip6
         assertEquals("10.89.200.9", d.devices[0].reachable)
         assertEquals(listOf("10.90.200.8", "fdee::8"), d.devices[1].addresses)

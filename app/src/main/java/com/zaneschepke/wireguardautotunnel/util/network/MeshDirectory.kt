@@ -31,7 +31,8 @@ object MeshDirectory {
 
     data class Service(val name: String, val url: String, val kind: String)
 
-    data class Wol(val name: String, val mac: String)
+    /** Phase 37: name only (MACs stay on the hub). */
+    data class Wol(val name: String)
 
     data class Directory(
         val selfIp: String,
@@ -39,6 +40,8 @@ object MeshDirectory {
         val devices: List<Device>,
         val services: List<Service> = emptyList(),
         val wol: List<Wol> = emptyList(),
+        /** Phase 38: the caller may use the hub's admin API ([MeshAdmin]). */
+        val selfAdmin: Boolean = false,
     )
 
     fun parse(json: String): Directory {
@@ -58,14 +61,15 @@ object MeshDirectory {
             },
             o["services"]?.jsonArray.orEmpty().map { it.jsonObject }.filter { it.s("url").startsWith("http") }
                 .map { Service(it.s("name"), it.s("url"), it.s("kind")) },
-            o["wol"]?.jsonArray.orEmpty().map { it.jsonObject }.map { Wol(it.s("name"), it.s("mac")) },
+            o["wol"]?.jsonArray.orEmpty().map { it.jsonObject }.map { Wol(it.s("name")) },
+            self?.get("admin")?.jsonPrimitive?.booleanOrNull == true,
         )
     }
 
     /** Blocking. Raw socket (like Beam): cleartext HTTP is blocked for OkHttp at this targetSdk. */
     fun fetch(hub: String): Directory = parse(request(hub, "GET", "/v1/mesh/directory"))
 
-    /** Blocking HTTP/1.0 to the hub's directory listener (source-IP auth over the tunnel); the 200 body. */
+    /** Blocking HTTP/1.0 to the hub's directory listener (source-IP auth over the tunnel); the 2xx body. */
     fun request(hub: String, method: String, path: String, json: String? = null): String =
         Socket().use { s ->
             s.connect(InetSocketAddress(hub, PORT), 5_000)
@@ -77,16 +81,14 @@ object MeshDirectory {
             s.getOutputStream().apply { write(head.toByteArray() + body); flush() }
             val res = s.getInputStream().readBytes().decodeToString()
             val status = res.substringBefore("\r\n").split(' ').getOrNull(1)
-            if (status != "200") error("$path: HTTP $status ${res.substringAfter("\r\n\r\n").take(200)}".trim())
+            if (status?.startsWith("2") != true) error("$path: HTTP $status ${res.substringAfter("\r\n\r\n").take(200)}".trim())
             res.substringAfter("\r\n\r\n")
         }
 
     /** POST /v1/mesh/wol: the hub sends the magic packet for a registered machine; throws "HTTP 403/429 …". */
     fun wake(hub: String, w: Wol) {
-        // contract says {mac}, the task {name}: send both, the hub only wakes registered machines either way
         request(hub, "POST", "/v1/mesh/wol", kotlinx.serialization.json.buildJsonObject {
             put("name", kotlinx.serialization.json.JsonPrimitive(w.name))
-            put("mac", kotlinx.serialization.json.JsonPrimitive(w.mac))
         }.toString())
     }
 

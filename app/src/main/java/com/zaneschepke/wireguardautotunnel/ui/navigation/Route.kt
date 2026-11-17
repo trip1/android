@@ -66,6 +66,14 @@ sealed class Route : NavKey {
 
     @Keep @Serializable data class Mesh(val id: Int) : Route()
 
+    /** Phase 38 mesh admin: shows join codes, so FLAG_SECURE like the config screen. */
+    @Keep
+    @Serializable
+    data class MeshAdmin(val id: Int) : Route(), SecureRoute {
+        override val requiresProtection: Boolean
+            get() = true
+    }
+
     @Keep
     @Serializable
     data class ConfigEdit(val id: Int?) : Route(), SecureRoute {
@@ -194,6 +202,7 @@ enum class Tab(
                 is Route.IPv6,
                 is Route.EntryTunnel,
                 is Route.Mesh,
+                is Route.MeshAdmin,
                 is Route.SplitTunnel -> TUNNELS
                 is Route.AutoTunnel,
                 Route.WifiDetectionMethod,
