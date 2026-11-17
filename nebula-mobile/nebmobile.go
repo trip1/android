@@ -414,8 +414,8 @@ func Reload(yamlConfig string) error {
 		return r.Err
 	case r.Failed:
 		return errors.New("nebula reload failed")
-	case len(r.RestartKeys) > 0:
-		return fmt.Errorf("nebula reload needs a restart for %v", r.RestartKeys)
+	case r.RestartRequired: // sticky per config.C, which Start makes fresh: true = this instance needs a restart
+		return fmt.Errorf("nebula reload needs a restart %v", r.RestartKeys)
 	}
 	return nil
 }
