@@ -126,4 +126,17 @@ class NebulaTest {
         val routes = Json.parseToJsonElement(Nebula.yaml(granted.forRun(true), key)).jsonObject.at("tun.unsafe_routes").jsonArray
         assertTrue(routes.any { it.jsonObject["route"]!!.jsonPrimitive.content == "0.0.0.0/0" })
     }
+
+    // Phase 33: a v2 profile's ip6 routes its /64; a v1 profile (5.13.x row, no ip6) still parses and has none
+    @Test
+    fun ipv6Overlay() {
+        val v2 = Nebula.parse(enrollNebula.replace("\"role\"", "\"ip6\":\"fdee:6e65:6275:6c61::c8:7/64\",\"role\""))
+        assertEquals("fdee:6e65:6275:6c61:0:0:0:0/64", v2.network6)
+        assertEquals(null, Nebula.parse(enrollNebula).network6)
+        assertEquals(2, Json.parseToJsonElement(Nebula.yaml(v2, key)).jsonObject.at("pki.initiating_version").jsonPrimitive.int)
+        assertEquals(null, Json.parseToJsonElement(Nebula.yaml(Nebula.parse(enrollNebula), key)).jsonObject.at("pki").jsonObject["initiating_version"])
+        assertEquals("10.90.0.0/16", Nebula.networkOf("10.90.200.7/16"))
+        val a = Nebula.activeConfig("""{"hosts":[{"vpn_addrs":["10.90.0.1","fdee:6e65:6275:6c61::1"],"name":"pi-5-1"}]}""", v2.ip, 1)
+        assertEquals("10.90.0.1/32, fdee:6e65:6275:6c61::1/128", a.peers[0].allowedIPs)
+    }
 }

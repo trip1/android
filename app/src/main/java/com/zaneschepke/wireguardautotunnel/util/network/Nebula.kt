@@ -44,6 +44,8 @@ object Nebula {
         val dns: String = "",
         @SerialName("listen_port") val listenPort: Int = 4242,
         val role: String = ROLE_CLIENT,
+        /** Overlay IPv6 (gofire Phase 33, v2 certs), e.g. fdee:6e65:6275:6c61::c8:6/64; "" on a v1-only cert. */
+        val ip6: String = "",
     ) {
         val isLighthouse get() = role != ROLE_CLIENT
         val isClient get() = role != ROLE_LIGHTHOUSE
@@ -57,13 +59,22 @@ object Nebula {
         fun forRun(fullWarp: Boolean): Profile = if (fullWarp) this else copy(routes = routes.filter { it.cidr != DEFAULT_ROUTE })
 
         /** 10.90.200.7/16 -> 10.90.0.0/16, the Nebula network routed into the VPN. */
-        val network: String
-            get() {
-                val (addr, bits) = ip.split('/')
-                val b = bits.toInt()
-                val n = addr.split('.').fold(0L) { a, o -> (a shl 8) or o.toLong() } and (0xffffffffL shl (32 - b))
-                return (3 downTo 0).joinToString(".") { ((n shr (8 * it)) and 0xff).toString() } + "/$b"
-            }
+        val network: String get() = networkOf(ip)
+
+        /** fdee:…::c8:6/64 -> fdee:…::/64, or null without a v6 address. */
+        val network6: String? get() = ip6.takeIf { it.isNotBlank() }?.let(::networkOf)
+    }
+
+    /** Network address of a CIDR (v4 or v6 literal; no DNS lookup for literals). */
+    fun networkOf(cidr: String): String {
+        val (addr, bits) = cidr.split('/')
+        val b = java.net.InetAddress.getByName(addr).address
+        val n = bits.toInt()
+        for (i in b.indices) {
+            val keep = (n - 8 * i).coerceIn(0, 8)
+            b[i] = (b[i].toInt() and (0xff shl (8 - keep))).toByte()
+        }
+        return java.net.InetAddress.getByAddress(b).hostAddress!! + "/$n"
     }
 
     const val DEFAULT_ROUTE = "0.0.0.0/0"
@@ -101,7 +112,7 @@ object Nebula {
             st.hosts.map { h ->
                 ActivePeer(
                     publicKey = h.name.ifEmpty { h.vpnAddrs.firstOrNull().orEmpty() },
-                    allowedIPs = h.vpnAddrs.joinToString { "$it/32" },
+                    allowedIPs = h.vpnAddrs.joinToString { if (':' in it) "$it/128" else "$it/32" },
                     endpoint = h.remote ?: h.relays.firstOrNull()?.let { "relay $it" },
                     presharedKey = null,
                     persistentKeepalive = null,
@@ -133,6 +144,8 @@ object Nebula {
                     put("ca", p.caPem)
                     put("cert", p.certPem)
                     put("key", privateKeyPem)
+                    // a v2 cert (has ip6) initiates v2 handshakes; a v1-only cert must stay on v1 (Nebula refuses 2)
+                    if (p.ip6.isNotBlank()) put("initiating_version", 2)
                 }
                 putJsonObject("static_host_map") {
                     p.lighthouses.forEach { lh -> putJsonArray(lh.ip) { lh.endpoints.forEach { add(it) } } }

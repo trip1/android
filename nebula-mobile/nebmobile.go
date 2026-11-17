@@ -1,12 +1,14 @@
 // Package nebmobile is Transwarp's gomobile binding around slackhq/nebula: one Nebula instance per process, fed a
 // YAML config and the VpnService tun fd. Logs go to stderr, which gomobile pipes to logcat (tag GoLog).
 //
-// Rebuild the AAR (needs Go 1.26 + NDK): ./nebula-mobile/build.sh
+// Rebuild the AAR (needs Go 1.27 + NDK): ./nebula-mobile/build.sh
 package nebmobile
 
 import (
 	"encoding/binary"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log/slog"
 	"net/netip"
 	"os"
@@ -19,6 +21,7 @@ import (
 	"github.com/slackhq/nebula/config"
 	"github.com/slackhq/nebula/logging"
 	"github.com/slackhq/nebula/overlay"
+	"github.com/slackhq/nebula/overlay/tio"
 )
 
 var (
@@ -28,9 +31,8 @@ var (
 	cnt *counting
 )
 
-// counting wraps the tun device and counts IPv4 bytes per Nebula host, like WireGuard's per-peer rx/tx: a packet
-// for an address in the Nebula network is that host's, one for an unsafe route is its gateway's (the hub).
-// ponytail: IPv4 only (our overlay is v4); v6 packets aren't counted.
+// counting wraps the tun device and counts bytes per Nebula host, like WireGuard's per-peer rx/tx: a packet for an
+// address in a Nebula network is that host's, one for an unsafe route is its gateway's (the hub).
 type counting struct {
 	overlay.Device
 	peers sync.Map // netip.Addr -> *peerCtr
@@ -39,24 +41,31 @@ type counting struct {
 	// fed to Nebula as if read from the tun; the matching replies are caught in Write and never reach the OS.
 	inject  chan []byte
 	waiting sync.Map // ICMP echo id (uint16) -> chan struct{}
-	pump    sync.Once
-	rd      chan readResult
-	ack     chan struct{}
-	buf     []byte
-}
-
-type readResult struct {
-	n   int
-	err error
+	done    chan struct{}
+	once    sync.Once
 }
 
 type peerCtr struct{ rx, tx, lastRx atomic.Int64 }
 
-func (d *counting) peer(b []byte, off int) *peerCtr {
-	if len(b) < 20 || b[0]>>4 != 4 {
+// peer is the counter of the packet's source (src) or destination host; nil for non-IP or off-route packets.
+func (d *counting) peer(b []byte, src bool) *peerCtr {
+	var a netip.Addr
+	switch {
+	case len(b) >= 20 && b[0]>>4 == 4:
+		off := 16
+		if src {
+			off = 12
+		}
+		a = netip.AddrFrom4([4]byte(b[off : off+4]))
+	case len(b) >= 40 && b[0]>>4 == 6:
+		off := 24
+		if src {
+			off = 8
+		}
+		a = netip.AddrFrom16([16]byte(b[off : off+16]))
+	default:
 		return nil
 	}
-	a := netip.AddrFrom4([4]byte(b[off : off+4]))
 	inNet := false
 	for _, n := range d.Networks() {
 		inNet = inNet || n.Contains(a)
@@ -72,58 +81,122 @@ func (d *counting) peer(b []byte, off int) *peerCtr {
 	return v.(*peerCtr)
 }
 
-// Read is a packet leaving this device (tx to its destination host), or an injected ping. A pump goroutine reads
-// the tun so Read can also select on injected packets; ack hands the single buffer back.
-func (d *counting) Read(b []byte) (int, error) {
-	d.pump.Do(func() {
+// Queues wraps the device's queue (Android has exactly one) so reads/writes are counted and pings injected.
+func (d *counting) Queues(n int) ([]tio.Queue, error) {
+	qs, err := d.Device.Queues(n)
+	if err != nil || len(qs) == 0 {
+		return qs, err
+	}
+	// ponytail: only the first queue carries pings; Android never opens more than one
+	for i := range qs {
+		qs[i] = &countingQueue{Queue: qs[i], d: d, ping: i == 0, rd: make(chan readResult, 1), ack: make(chan struct{})}
+	}
+	return qs, nil
+}
+
+func (d *counting) Close() error {
+	d.once.Do(func() { close(d.done) })
+	return d.Device.Close()
+}
+
+type readResult struct {
+	pkts []tio.Packet
+	err  error
+}
+
+type countingQueue struct {
+	tio.Queue
+	d    *counting
+	ping bool
+	pump sync.Once
+	rd   chan readResult
+	ack  chan struct{} // hands the inner queue's borrowed buffer back on the next Read
+	held bool
+	ret  [1]tio.Packet
+}
+
+// Read is packets leaving this device (tx to their destination host), or an injected ping. A pump goroutine reads
+// the inner queue so Read can also select on injected packets.
+func (q *countingQueue) Read() ([]tio.Packet, error) {
+	if !q.ping {
+		pkts, err := q.Queue.Read()
+		q.countTx(pkts)
+		return pkts, err
+	}
+	if q.held { // the caller is done with the previous batch (tio.Queue contract)
+		q.held = false
+		select {
+		case q.ack <- struct{}{}:
+		case <-q.d.done:
+			return nil, os.ErrClosed
+		}
+	}
+	q.pump.Do(func() {
 		go func() {
 			for {
-				n, err := d.Device.Read(d.buf)
-				d.rd <- readResult{n, err} // buffered: the last send after Stop doesn't block
+				pkts, err := q.Queue.Read()
+				q.rd <- readResult{pkts, err} // buffered: the last send after Stop doesn't block
 				if err != nil {
 					return
 				}
-				<-d.ack
+				select {
+				case <-q.ack:
+				case <-q.d.done:
+					return
+				}
 			}
 		}()
 	})
 	select {
-	case p := <-d.inject:
-		return copy(b, p), nil
-	case r := <-d.rd:
-		n := copy(b, d.buf[:r.n])
-		d.ack <- struct{}{}
-		if p := d.peer(b[:n], 16); p != nil {
-			p.tx.Add(int64(n))
+	case p := <-q.d.inject:
+		q.ret[0] = tio.Packet{Bytes: p}
+		return q.ret[:], nil
+	case r := <-q.rd:
+		if r.err != nil {
+			return nil, r.err
 		}
-		return n, r.err
+		q.held = true
+		q.countTx(r.pkts)
+		return r.pkts, nil
+	}
+}
+
+func (q *countingQueue) countTx(pkts []tio.Packet) {
+	for _, p := range pkts {
+		if c := q.d.peer(p.Bytes, false); c != nil {
+			c.tx.Add(int64(len(p.Bytes)))
+		}
 	}
 }
 
 // Write is a packet arriving from a host (rx from its source).
-func (d *counting) Write(b []byte) (int, error) {
-	if p := d.peer(b, 12); p != nil {
+func (q *countingQueue) Write(b []byte) (int, error) {
+	if p := q.d.peer(b, true); p != nil {
 		p.rx.Add(int64(len(b)))
 		p.lastRx.Store(time.Now().Unix())
 	}
 	if id, ok := echoReplyID(b); ok {
-		if w, ok := d.waiting.LoadAndDelete(id); ok {
+		if w, ok := q.d.waiting.LoadAndDelete(id); ok {
 			close(w.(chan struct{}))
 			return len(b), nil
 		}
 	}
-	return d.Device.Write(b)
+	return q.Queue.Write(b)
 }
 
 func newCounting(dev overlay.Device) *counting {
-	return &counting{Device: dev, inject: make(chan []byte, 4), rd: make(chan readResult, 1), ack: make(chan struct{}),
-		buf: make([]byte, 65535)}
+	return &counting{Device: dev, inject: make(chan []byte, 4), done: make(chan struct{})}
 }
 
 // ping sends one ICMP echo through Nebula and waits for its reply: RTT in ms, -1 on timeout.
 func (d *counting) ping(dst netip.Addr, timeout time.Duration) int {
-	nets := d.Networks()
-	if len(nets) == 0 || !dst.Is4() {
+	var src netip.Addr
+	for _, n := range d.Networks() {
+		if n.Addr().Is4() == dst.Is4() && !src.IsValid() {
+			src = n.Addr()
+		}
+	}
+	if !src.IsValid() {
 		return -1
 	}
 	id := uint16(time.Now().UnixNano())
@@ -132,7 +205,7 @@ func (d *counting) ping(dst netip.Addr, timeout time.Duration) int {
 	defer d.waiting.Delete(id)
 	start := time.Now()
 	select {
-	case d.inject <- echoRequest(nets[0].Addr(), dst, id):
+	case d.inject <- echoRequest(src, dst, id):
 	case <-time.After(timeout):
 		return -1
 	}
@@ -144,8 +217,20 @@ func (d *counting) ping(dst netip.Addr, timeout time.Duration) int {
 	}
 }
 
-// echoRequest is a 28-byte IPv4 ICMP echo request (id, seq 1) from src to dst.
+// echoRequest is an ICMP (v4, 28 bytes) or ICMPv6 (48 bytes) echo request (id, seq 1) from src to dst.
 func echoRequest(src, dst netip.Addr, id uint16) []byte {
+	if dst.Is6() {
+		b := make([]byte, 48)
+		b[0], b[5], b[6], b[7] = 0x60, 8, 58, 64 // v6, payload length 8, next header ICMPv6, hop limit 64
+		s, t := src.As16(), dst.As16()
+		copy(b[8:24], s[:])
+		copy(b[24:40], t[:])
+		b[40] = 128 // echo request
+		binary.BigEndian.PutUint16(b[44:], id)
+		binary.BigEndian.PutUint16(b[46:], 1)
+		binary.BigEndian.PutUint16(b[42:], checksum6(b))
+		return b
+	}
 	b := make([]byte, 28)
 	b[0], b[3], b[8], b[9] = 0x45, 28, 64, 1 // v4/IHL 5, total length 28, TTL 64, proto ICMP
 	s, t := src.As4(), dst.As4()
@@ -159,7 +244,19 @@ func echoRequest(src, dst netip.Addr, id uint16) []byte {
 	return b
 }
 
+// checksum6 is the ICMPv6 checksum of a v6 packet without extension headers (pseudo-header + ICMPv6 message).
+func checksum6(b []byte) uint16 {
+	ps := make([]byte, 40, 40+len(b)-40)
+	copy(ps, b[8:40])
+	binary.BigEndian.PutUint32(ps[32:], uint32(len(b)-40))
+	ps[39] = 58
+	return checksum(append(ps, b[40:]...))
+}
+
 func echoReplyID(b []byte) (uint16, bool) {
+	if len(b) >= 48 && b[0]>>4 == 6 && b[6] == 58 && b[40] == 129 {
+		return binary.BigEndian.Uint16(b[44:]), true
+	}
 	if len(b) < 20 || b[0]>>4 != 4 || b[9] != 1 {
 		return 0, false
 	}
@@ -252,6 +349,26 @@ func stopLocked() {
 		ctl.Stop()
 		ctl, cfg, cnt = nil, nil, nil
 	}
+}
+
+// Reload applies a new config to the running instance without dropping the tunnel (a renewed cert, new routes or
+// firewall rules). Keys that need a restart (listen port, role) are reported as an error; the caller restarts.
+func Reload(yamlConfig string) error {
+	mu.Lock()
+	defer mu.Unlock()
+	if ctl == nil {
+		return errors.New("nebula is not running")
+	}
+	r := cfg.ReloadConfigString(yamlConfig)
+	switch {
+	case r.Err != nil:
+		return r.Err
+	case r.Failed:
+		return errors.New("nebula reload failed")
+	case len(r.RestartKeys) > 0:
+		return fmt.Errorf("nebula reload needs a restart for %v", r.RestartKeys)
+	}
+	return nil
 }
 
 // Rebind re-opens the UDP socket and re-announces to the lighthouses after a network change.

@@ -58,6 +58,9 @@ class NebulaVpnService : VpnService() {
                     // lighthouse endpoint inside a routed CIDR would loop
                     .addDisallowedApplication(packageName)
             p.network.split('/').let { (a, b) -> builder.addRoute(a, b.toInt()) }
+            // v2 cert: overlay v6 address + its /64 (Phase 33)
+            if (p.ip6.isNotBlank()) p.ip6.split('/').let { (a, b) -> builder.addAddress(a, b.toInt()) }
+            p.network6?.split('/')?.let { (a, b) -> builder.addRoute(a, b.toInt()) }
             if (p.isClient) {
                 p.routes.forEach { r -> r.cidr.split('/').let { (a, b) -> builder.addRoute(a, b.toInt()) } }
                 // exit: like WireGuard's ::/0, IPv6 goes into the tunnel and dies there (the hub has no v6) instead of leaking

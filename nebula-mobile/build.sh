@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Rebuilds app/libs/nebula-mobile.aar (gomobile bind of this module). Needs Go 1.26 and the NDK.
+# Rebuilds app/libs/nebula-mobile.aar (gomobile bind of this module). Needs Go 1.27 and the NDK.
 set -euo pipefail
 cd "$(dirname "$0")"
-GO="${GO:-$HOME/.local/bin/mise exec go@1.26 -- go}"
+GO="${GO:-$HOME/.local/bin/mise exec go@1.27.4 -- go}"
 export GOTOOLCHAIN=local ANDROID_HOME="${ANDROID_HOME:-$HOME/android-sdk}"
 export ANDROID_NDK_HOME="${ANDROID_NDK_HOME:-$ANDROID_HOME/ndk/28.2.13676358}"
 export GOBIN="$PWD/.bin" PATH="$PWD/.bin:$PATH"
