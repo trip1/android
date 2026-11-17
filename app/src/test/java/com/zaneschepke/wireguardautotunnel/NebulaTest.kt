@@ -139,4 +139,23 @@ class NebulaTest {
         val a = Nebula.activeConfig("""{"hosts":[{"vpn_addrs":["10.90.0.1","fdee:6e65:6275:6c61::1"],"name":"pi-5-1"}]}""", v2.ip, 1)
         assertEquals("10.90.0.1/32, fdee:6e65:6275:6c61::1/128", a.peers[0].allowedIPs)
     }
+
+    // Phase 34: preferred_ranges render top level; renew due at min(6 h, half-life); a cert-only renew reloads in place
+    @Test
+    fun renewAndPreferredRanges() {
+        val p = Nebula.parse(enrollNebula.replace("\"role\"", "\"preferred_ranges\":[\"10.0.0.0/16\",\"192.168.0.0/16\"],\"role\""))
+        assertEquals(listOf("10.0.0.0/16", "192.168.0.0/16"),
+            Json.parseToJsonElement(Nebula.yaml(p, key)).jsonObject["preferred_ranges"]!!.jsonArray.map { it.jsonPrimitive.content })
+        assertEquals(null, Json.parseToJsonElement(Nebula.yaml(Nebula.parse(enrollNebula), key)).jsonObject["preferred_ranges"])
+        val h = 3_600_000L
+        assertEquals(0L, Nebula.renewDueAt(null, 90 * 24 * h)) // a 5.13/5.14 row never renewed: now
+        assertEquals(6 * h, Nebula.renewDueAt(0, 90 * 24 * h)) // 90 d TTL: the 6 h refresh comes first
+        assertEquals(2 * h, Nebula.renewDueAt(0, 4 * h)) // short TTL: half-life
+        assertEquals(6 * h, Nebula.renewDueAt(0, null)) // never expires: refresh only
+        assertTrue(p.sameVpn(p.copy(certPem = "NEW", caPem = "NEWCA", preferredRanges = emptyList())))
+        assertTrue(!p.sameVpn(p.copy(routes = p.routes.drop(1))))
+        val conf = MeshEnroll.nebulaPlaceholder("K", p.ip, "zz", "2027-02-14T00:00:00Z", "2026-11-16T00:00:00Z")
+        assertEquals(1_794_787_200_000L, MeshEnroll.headerMs(conf, "Renewed"))
+        assertEquals("10.90.200.7/16", p.addresses)
+    }
 }

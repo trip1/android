@@ -6,6 +6,7 @@ import android.net.VpnService
 import android.os.ParcelFileDescriptor
 import androidx.core.app.ServiceCompat
 import chat.warpsignal.nebmobile.Nebmobile
+import chat.warpsignal.nebmobile.Protector
 import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.notification.AndroidNotificationService.NotificationChannels
 import com.zaneschepke.wireguardautotunnel.notification.NotificationService
@@ -54,9 +55,8 @@ class NebulaVpnService : VpnService() {
                     .setSession(name)
                     .setMtu(Nebula.MTU)
                     .addAddress(addr, bits.toInt())
-                    // Nebula's UDP socket lives in this app: keep it (and the app) off the tunnel, or the LAN
-                    // lighthouse endpoint inside a routed CIDR would loop
-                    .addDisallowedApplication(packageName)
+            // the app itself uses the tunnel (directory, Beam, renew); only Nebula's own UDP socket is protect()ed in
+            // Nebmobile.start, or the LAN lighthouse endpoint inside a routed CIDR would loop
             p.network.split('/').let { (a, b) -> builder.addRoute(a, b.toInt()) }
             // v2 cert: overlay v6 address + its /64 (Phase 33)
             if (p.ip6.isNotBlank()) p.ip6.split('/').let { (a, b) -> builder.addAddress(a, b.toInt()) }
@@ -69,7 +69,8 @@ class NebulaVpnService : VpnService() {
             }
             val fd = builder.establish() ?: error("VPN permission revoked")
             tun = fd
-            Nebula.call { Nebmobile.start(intent.getStringExtra(EXTRA_YAML)!!, fd.fd.toLong()) }
+            val protector = Protector { sock -> protect(sock.toInt()) }
+            Nebula.call { Nebmobile.start(intent.getStringExtra(EXTRA_YAML)!!, fd.fd.toLong(), protector) }
             _active.value = id to System.currentTimeMillis()
         }
         result.onFailure {

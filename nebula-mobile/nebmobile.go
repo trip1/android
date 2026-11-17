@@ -12,16 +12,19 @@ import (
 	"log/slog"
 	"net/netip"
 	"os"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
+	"unsafe"
 
 	"github.com/slackhq/nebula"
 	"github.com/slackhq/nebula/config"
 	"github.com/slackhq/nebula/logging"
 	"github.com/slackhq/nebula/overlay"
 	"github.com/slackhq/nebula/overlay/tio"
+	"github.com/slackhq/nebula/udp"
 )
 
 var (
@@ -293,9 +296,51 @@ func Ping(ip string, timeoutMs int) int {
 	return d.ping(a, time.Duration(timeoutMs)*time.Millisecond)
 }
 
+// Protector is VpnService.protect: it keeps Nebula's own UDP socket off the VPN, so the rest of the app (directory,
+// Beam, renew) can use the tunnel instead of being excluded from it.
+type Protector interface {
+	Protect(fd int) bool
+}
+
+// protectUDP hands every Nebula UDP socket to p before any packet is sent (Android's Rebind is a no-op, so the
+// socket never changes). ponytail: reads nebula's unexported Control.f.writers (v1.12.0); Start fails loudly if a
+// nebula upgrade moves it.
+func protectUDP(n *nebula.Control, p Protector) error {
+	f := reflect.ValueOf(n).Elem().FieldByName("f")
+	if !f.IsValid() || f.IsNil() {
+		return errors.New("nebula internals changed: no Control.f")
+	}
+	w := f.Elem().FieldByName("writers")
+	if !w.IsValid() {
+		return errors.New("nebula internals changed: no Interface.writers")
+	}
+	conns, _ := reflect.NewAt(w.Type(), unsafe.Pointer(w.UnsafeAddr())).Elem().Interface().([]udp.Conn)
+	if len(conns) == 0 {
+		return errors.New("nebula has no UDP socket to protect")
+	}
+	for _, c := range conns {
+		sc, ok := c.(syscall.Conn)
+		if !ok {
+			return fmt.Errorf("nebula UDP conn %T has no fd", c)
+		}
+		rc, err := sc.SyscallConn()
+		if err != nil {
+			return err
+		}
+		ok = false
+		if err := rc.Control(func(fd uintptr) { ok = p.Protect(int(fd)) }); err != nil {
+			return err
+		}
+		if !ok {
+			return errors.New("VpnService.protect failed for nebula's UDP socket")
+		}
+	}
+	return nil
+}
+
 // Start runs Nebula on a dup of tunFd (the caller keeps and closes its own fd). Any running instance is stopped
-// first.
-func Start(yamlConfig string, tunFd int) error {
+// first. p protects Nebula's UDP socket from the VPN before it sends anything.
+func Start(yamlConfig string, tunFd int, p Protector) error {
 	mu.Lock()
 	defer mu.Unlock()
 	stopLocked()
@@ -327,6 +372,10 @@ func Start(yamlConfig string, tunFd int) error {
 		if !opened {
 			syscall.Close(fd)
 		}
+		return err
+	}
+	if err := protectUDP(n, p); err != nil {
+		n.Stop()
 		return err
 	}
 	if err := n.Start(); err != nil {

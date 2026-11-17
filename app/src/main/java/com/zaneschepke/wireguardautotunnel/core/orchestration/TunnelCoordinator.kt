@@ -45,6 +45,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.collectLatest
+import kotlin.time.Duration.Companion.minutes
+import com.zaneschepke.wireguardautotunnel.util.network.MeshEnroll
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.drop
@@ -134,7 +137,7 @@ class TunnelCoordinator(
                     emit(null)
                     if (neb == null || mon?.tunnelStatisticsEnabled != true) return@flow
                     val ip = tunnelRepository.getById(neb.first)?.takeIf { it.isNebula }
-                        ?.let { Nebula.parse(it.nebulaProfile).ip } ?: return@flow
+                        ?.let { Nebula.parse(it.nebulaProfile).addresses } ?: return@flow
                     while (true) {
                         val st = withContext(Nebula.dispatcher) { runCatching { Nebmobile.status() }.getOrNull() }
                         emit(st?.let { runCatching { Nebula.activeConfig(it, ip, System.currentTimeMillis() / 1000) }.getOrNull() })
@@ -164,7 +167,55 @@ class TunnelCoordinator(
 
     private val directPaths = DirectPaths(scope, backendStatus, tunnelProvider)
 
+    /**
+     * Nebula auto-renew (Phase 34): the running Nebula tunnel renews over the tunnel at half-life and refreshes its
+     * profile (rules, exits, lighthouses) every 6 h; a failure retries in 15 min. Expired certs can't connect, so
+     * they still need a QR renew.
+     */
+    private fun nebulaRenewLoop() = scope.launch {
+        NebulaVpnService.active.map { it?.first }.distinctUntilChanged().collectLatest { id ->
+            id ?: return@collectLatest
+            delay(10.seconds) // let the first handshake to the hub finish
+            while (true) {
+                val t = tunnelRepository.getById(id)?.takeIf { it.isNebula } ?: return@collectLatest
+                val due = Nebula.renewDueAt(MeshEnroll.headerMs(t.quickConfig, "Renewed"), MeshEnroll.headerMs(t.quickConfig, "Expires"))
+                delay((due - System.currentTimeMillis()).coerceAtLeast(0))
+                runCatching { renewNebula(t) }.onFailure {
+                    Timber.w(it, "Nebula renew failed")
+                    delay(15.minutes)
+                }
+            }
+        }
+    }
+
+    /** Saves the renewed profile in place; reloads Nebula when the VPN interface is unchanged, else restarts. */
+    private suspend fun renewNebula(t: TunnelConfig) {
+        val old = Nebula.parse(t.nebulaProfile)
+        val key = t.getConfig().`interface`.privateKey
+        val (json, expires) = withContext(Dispatchers.IO) { MeshEnroll.renewNebula(old.dns, Config.generatePublicKeyFromPrivateKey(key)) }
+        val fresh = Nebula.parse(json).copy(role = old.role, listenPort = old.listenPort)
+        val updated = t.copy(
+            quickConfig = Config.parseQuickString(
+                MeshEnroll.nebulaPlaceholder(key, fresh.ip, MeshEnroll.header(t.quickConfig, "Name"), expires)).asQuickString(),
+            nebulaProfile = Nebula.encode(fresh),
+            // like a QR renew: a newly granted exit turns Full Warp on, a dropped one off
+            isExitNode = if (fresh.hasExit != old.hasExit) fresh.hasExit else t.isExitNode,
+        )
+        tunnelRepository.save(updated)
+        Timber.i("Nebula ${t.name} renewed, expires $expires")
+        if (NebulaVpnService.active.value?.first != t.id) return
+        if (updated.nebulaRunProfile().sameVpn(t.nebulaRunProfile())) {
+            val yaml = updated.nebulaYaml()
+            val reloaded = withContext(Nebula.dispatcher) { runCatching { Nebmobile.reload(yaml) } }
+            if (reloaded.isSuccess) return
+            Timber.i(reloaded.exceptionOrNull(), "Nebula reload refused, restarting")
+        }
+        stopTunnel(t.id)
+        startTunnel(updated)
+    }
+
     init {
+        nebulaRenewLoop()
         // new network: whatever blocked UDP may be gone, so fallen-back tunnels climb back to entry 0
         scope.launch {
             networkMonitor.connectivityStateFlow
@@ -454,6 +505,7 @@ class TunnelCoordinator(
             .onSuccess {
                 _actions.emit(TunnelActionEvent.Started(tunnelId = tunnelConfig.id, source = source))
                 replaceLastActiveTunnelIds(setOf(tunnelConfig.id))
+                directPaths.start(tunnelConfig, liveStats = false)
             }
             .onFailure {
                 Timber.e(it, "Nebula start failed")
@@ -581,6 +633,7 @@ class TunnelCoordinator(
 
     private suspend fun stopTunnelInternal(id: Int, source: TunnelActionSource) {
         if (id == NebulaVpnService.active.value?.first) {
+            directPaths.stop(id)
             serviceManager.stopNebula()
             _actions.emit(TunnelActionEvent.Stopped(tunnelId = id, source = source))
             replaceLastActiveTunnelIds(tunnelProvider.backendStatus.value.activeTunnels.keys)
@@ -611,6 +664,7 @@ class TunnelCoordinator(
             _actions.emit(TunnelActionEvent.Stopped(tunnelId = id, source = source))
         }
         NebulaVpnService.active.value?.let {
+            directPaths.stop(it.first)
             serviceManager.stopNebula()
             _actions.emit(TunnelActionEvent.Stopped(tunnelId = it.first, source = source))
         }

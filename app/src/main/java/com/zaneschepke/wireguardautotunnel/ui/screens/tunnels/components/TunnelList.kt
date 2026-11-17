@@ -514,7 +514,7 @@ private fun tunnelRowDescription(
     if (entryName == null && latency == null && route == null && expiry == null) return null
     return {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            if (expiry != null) ExpiryText(expiry)
+            if (expiry != null) ExpiryText(expiry, autoRenew = tunnel.isNebula)
             if (route != null) {
                 AssistChip(
                     onClick = {},

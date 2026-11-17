@@ -42,16 +42,22 @@ object MeshDirectory {
     }
 
     /** Blocking. Raw socket (like Beam): cleartext HTTP is blocked for OkHttp at this targetSdk. */
-    fun fetch(hub: String): Directory =
+    fun fetch(hub: String): Directory = parse(request(hub, "GET", "/v1/mesh/directory"))
+
+    /** Blocking HTTP/1.0 to the hub's directory listener (source-IP auth over the tunnel); the 200 body. */
+    fun request(hub: String, method: String, path: String, json: String? = null): String =
         Socket().use { s ->
             s.connect(InetSocketAddress(hub, PORT), 5_000)
-            s.soTimeout = 5_000
+            s.soTimeout = 15_000
+            val body = json?.toByteArray() ?: ByteArray(0)
+            val head = "$method $path HTTP/1.0\r\nHost: $hub:$PORT\r\n" +
+                (if (json != null) "Content-Type: application/json\r\nContent-Length: ${body.size}\r\n" else "") + "\r\n"
             // HTTP/1.0: no chunked encoding, body ends at EOF
-            s.getOutputStream().write("GET /v1/mesh/directory HTTP/1.0\r\nHost: $hub:$PORT\r\n\r\n".toByteArray())
+            s.getOutputStream().apply { write(head.toByteArray() + body); flush() }
             val res = s.getInputStream().readBytes().decodeToString()
             val status = res.substringBefore("\r\n").split(' ').getOrNull(1)
-            if (status != "200") error("directory: HTTP $status")
-            parse(res.substringAfter("\r\n\r\n"))
+            if (status != "200") error("$path: HTTP $status ${res.substringAfter("\r\n\r\n").take(200)}".trim())
+            res.substringAfter("\r\n\r\n")
         }
 
     /**

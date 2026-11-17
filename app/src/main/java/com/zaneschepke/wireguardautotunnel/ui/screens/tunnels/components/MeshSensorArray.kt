@@ -42,13 +42,17 @@ import org.koin.compose.koinInject
 
 private const val OFFLINE_AFTER_SECONDS = 180L
 
-/** Key expiry from `# Transwarp-Expires`; LCARS crimson under 7 days or once expired. */
+/** Key expiry from `# Transwarp-Expires`; LCARS crimson under 7 days or once expired. [autoRenew]: Nebula renews itself. */
 @Composable
-fun ExpiryText(days: Long) {
+fun ExpiryText(days: Long, autoRenew: Boolean = false) {
     Text(
-        text = if (days < 0) stringResource(R.string.key_expired) else stringResource(R.string.key_expires_in, days),
+        text = when {
+            days < 0 -> stringResource(R.string.key_expired)
+            autoRenew -> stringResource(R.string.key_renews_automatically)
+            else -> stringResource(R.string.key_expires_in, days)
+        },
         style = MaterialTheme.typography.bodySmall,
-        color = if (days < 7) LcarsCrimson else MaterialTheme.colorScheme.outline,
+        color = if (days < 7 && !(autoRenew && days >= 3)) LcarsCrimson else MaterialTheme.colorScheme.outline,
     )
 }
 

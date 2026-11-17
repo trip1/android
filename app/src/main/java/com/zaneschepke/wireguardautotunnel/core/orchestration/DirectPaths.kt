@@ -6,6 +6,7 @@ import com.zaneschepke.wireguardautotunnel.core.tunnel.TunnelProvider
 import com.zaneschepke.wireguardautotunnel.domain.model.TunnelConfig
 import com.zaneschepke.wireguardautotunnel.util.network.MeshDirectory
 import com.zaneschepke.wireguardautotunnel.util.network.MeshEnroll
+import com.zaneschepke.wireguardautotunnel.util.network.Nebula
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
@@ -36,9 +37,11 @@ class DirectPaths(
     fun start(tunnel: TunnelConfig, liveStats: Boolean) {
         stop(tunnel.id)
         if (MeshEnroll.header(tunnel.quickConfig, "Name") == null) return
-        val hub = runCatching { tunnel.getConfig().`interface`.dns }.getOrNull()?.split(',')?.firstOrNull()?.trim()
-            ?.takeIf { it.isNotEmpty() } ?: return
-        jobs[tunnel.id] = scope.launch { poll(tunnel.id, hub, liveStats) }
+        val dns = if (tunnel.isNebula) Nebula.parse(tunnel.nebulaProfile).dns
+            else runCatching { tunnel.getConfig().`interface`.dns }.getOrNull()
+        val hub = dns?.split(',')?.firstOrNull()?.trim()?.takeIf { it.isNotEmpty() } ?: return
+        // Nebula: directory only (Beam picker, Sensor Array); Nebula finds direct paths itself
+        jobs[tunnel.id] = scope.launch { poll(tunnel.id, hub, liveStats && !tunnel.isNebula) }
     }
 
     fun stop(id: Int) {

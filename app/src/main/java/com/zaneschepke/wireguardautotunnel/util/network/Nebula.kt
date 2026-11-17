@@ -46,6 +46,8 @@ object Nebula {
         val role: String = ROLE_CLIENT,
         /** Overlay IPv6 (gofire Phase 33, v2 certs), e.g. fdee:6e65:6275:6c61::c8:6/64; "" on a v1-only cert. */
         val ip6: String = "",
+        /** Underlay ranges Nebula prefers when two members share a LAN (gofire Phase 34). */
+        @SerialName("preferred_ranges") val preferredRanges: List<String> = emptyList(),
     ) {
         val isLighthouse get() = role != ROLE_CLIENT
         val isClient get() = role != ROLE_LIGHTHOUSE
@@ -61,6 +63,13 @@ object Nebula {
         /** 10.90.200.7/16 -> 10.90.0.0/16, the Nebula network routed into the VPN. */
         val network: String get() = networkOf(ip)
 
+        /** Tunnel address CIDRs, v4 then v6, as the ActiveConfig interface address (Beam binds these). */
+        val addresses: String get() = listOf(ip, ip6).filter { it.isNotBlank() }.joinToString()
+
+        /** Same VPN interface (addresses, routes, DNS) as [o]: a profile change that only needs a Nebula reload. */
+        fun sameVpn(o: Profile) = ip == o.ip && ip6 == o.ip6 && routes == o.routes && dns == o.dns &&
+            role == o.role && listenPort == o.listenPort
+
         /** fdee:…::c8:6/64 -> fdee:…::/64, or null without a v6 address. */
         val network6: String? get() = ip6.takeIf { it.isNotBlank() }?.let(::networkOf)
     }
@@ -75,6 +84,16 @@ object Nebula {
             b[i] = (b[i].toInt() and (0xff shl (8 - keep))).toByte()
         }
         return java.net.InetAddress.getByAddress(b).hostAddress!! + "/$n"
+    }
+
+    /** Renew/refresh every 6 h (rules, exits) and at the latest at half-life (contract Phase B). */
+    const val REFRESH_MS = 6 * 3_600_000L
+
+    /** When the next renew is due: 6 h after the last one, earlier for a TTL under 12 h; now when never renewed. */
+    fun renewDueAt(renewedMs: Long?, expiresMs: Long?): Long {
+        renewedMs ?: return 0
+        val half = expiresMs?.let { (it - renewedMs) / 2 } ?: REFRESH_MS
+        return renewedMs + minOf(REFRESH_MS, half)
     }
 
     const val DEFAULT_ROUTE = "0.0.0.0/0"
@@ -147,6 +166,7 @@ object Nebula {
                     // a v2 cert (has ip6) initiates v2 handshakes; a v1-only cert must stay on v1 (Nebula refuses 2)
                     if (p.ip6.isNotBlank()) put("initiating_version", 2)
                 }
+                if (p.preferredRanges.isNotEmpty()) putJsonArray("preferred_ranges") { p.preferredRanges.forEach { add(it) } }
                 putJsonObject("static_host_map") {
                     p.lighthouses.forEach { lh -> putJsonArray(lh.ip) { lh.endpoints.forEach { add(it) } } }
                 }

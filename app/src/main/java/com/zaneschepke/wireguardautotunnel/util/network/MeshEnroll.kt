@@ -17,6 +17,7 @@ import javax.net.ssl.X509TrustManager
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
@@ -46,8 +47,10 @@ object MeshEnroll {
      * Stored quickConfig of a Nebula tunnel: keeps the private key plus the Transwarp-Name / -Expires headers that
      * renew-in-place and the expiry warnings already read, and parses like any peerless conf.
      */
-    fun nebulaPlaceholder(privateKey: String, ip: String, name: String?, expiresAt: String?): String =
-        listOfNotNull(name?.let { "# Transwarp-Name = $it" }, expiresAt?.let { "# Transwarp-Expires = $it" })
+    fun nebulaPlaceholder(privateKey: String, ip: String, name: String?, expiresAt: String?,
+        renewedAt: String = java.time.Instant.now().toString()): String =
+        listOfNotNull(name?.let { "# Transwarp-Name = $it" }, expiresAt?.let { "# Transwarp-Expires = $it" },
+            "# Transwarp-Renewed = $renewedAt")
             .plus(listOf("[Interface]", "PrivateKey = $privateKey", "Address = $ip"))
             .joinToString("\n")
 
@@ -94,8 +97,22 @@ object MeshEnroll {
 
     /** Whole days until `# Transwarp-Expires` (negative = expired), or null when it never expires. */
     fun expiresInDays(conf: String, nowMs: Long = System.currentTimeMillis()): Long? =
-        header(conf, "Expires")?.let { runCatching { OffsetDateTime.parse(it).toInstant().toEpochMilli() }.getOrNull() }
-            ?.let { exp -> if (exp <= nowMs) -1 else (exp - nowMs) / 86_400_000 }
+        headerMs(conf, "Expires")?.let { exp -> if (exp <= nowMs) -1 else (exp - nowMs) / 86_400_000 }
+
+    /** Epoch ms of an ISO-8601 `# Transwarp-<key>` header, or null. */
+    fun headerMs(conf: String, key: String): Long? =
+        header(conf, key)?.let { runCatching { OffsetDateTime.parse(it).toInstant().toEpochMilli() }.getOrNull() }
+
+    /**
+     * Blocking. Renews a Nebula cert over the tunnel (`POST /v1/mesh/nebula/renew`, the same key re-signed):
+     * the new profile JSON and expires_at.
+     */
+    fun renewNebula(hub: String, publicKey: String): Pair<String, String?> {
+        val body = buildJsonObject { put("nebula_public_key", publicKey) }.toString()
+        val json = Json.parseToJsonElement(MeshDirectory.request(hub, "POST", "/v1/mesh/nebula/renew", body)).jsonObject
+        val profile = Nebula.encode(Nebula.parse(json["nebula"]?.toString() ?: error("no nebula profile in renew response")))
+        return profile to json["expires_at"]?.jsonPrimitive?.contentOrNull
+    }
 
     /** Private routes other than the mesh range (10.89.0.0/16) in the hub's AllowedIPs: subnet (LAN) access. */
     fun lanRoutes(allowedIPs: String?): List<String> =
