@@ -8,6 +8,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -71,7 +73,8 @@ class BeamActivity : ComponentActivity() {
                     onDismiss = { finish() },
                     title = stringResource(R.string.beam_via_transwarp),
                     body = {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // a mesh directory (WG + Nebula members) outgrows the dialog
+                        Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (peers.isEmpty() && directory == null) Text(stringResource(R.string.beam_no_peers))
                             peers.forEach { (host, label) -> TextButton(onClick = { beam(host) }) { Text(label) } }
                             directory?.devices?.filter { it.meshIp != directory.selfIp }?.forEach { d ->
