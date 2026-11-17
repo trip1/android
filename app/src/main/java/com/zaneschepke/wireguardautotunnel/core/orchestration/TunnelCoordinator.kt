@@ -172,7 +172,7 @@ class TunnelCoordinator(
      * profile (rules, exits, lighthouses) every 6 h; a failure retries in 15 min. Expired certs can't connect, so
      * they still need a QR renew.
      */
-    private fun nebulaRenewLoop() = scope.launch {
+    private fun nebulaRenewLoop(scope: CoroutineScope) = scope.launch {
         NebulaVpnService.active.map { it?.first }.distinctUntilChanged().collectLatest { id ->
             id ?: return@collectLatest
             delay(10.seconds) // let the first handshake to the hub finish
@@ -215,7 +215,7 @@ class TunnelCoordinator(
     }
 
     init {
-        nebulaRenewLoop()
+        nebulaRenewLoop(scope)
         // new network: whatever blocked UDP may be gone, so fallen-back tunnels climb back to entry 0
         scope.launch {
             networkMonitor.connectivityStateFlow
