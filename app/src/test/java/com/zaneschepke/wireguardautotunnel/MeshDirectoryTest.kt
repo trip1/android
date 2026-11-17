@@ -33,4 +33,32 @@ class MeshDirectoryTest {
         // self not a peers client: nothing
         assertEquals(0, MeshDirectory.directPeers(dir.copy(selfPeers = false), false, emptyMap(), 0).size)
     }
+
+    @Test
+    fun parsesServicesWolAndAddresses() {
+        val d = MeshDirectory.parse("""
+            {"self":{"mesh_ip":"10.90.200.7"},
+             "devices":[{"name":"ws","mesh_ip":"10.89.200.9","kind":"client","addresses":["fd00::9/128","10.89.200.9/32"]},
+                        {"name":"neb","mesh_ip":"10.90.200.8","kind":"nebula","ip6":"fdee::8"}],
+             "services":[{"name":"Grafana","url":"http://grafana.mesh:3000","kind":"app"},{"name":"bad","url":"javascript:x"}],
+             "wol":[{"name":"nas","mac":"aa:bb:cc:dd:ee:ff"}]}
+        """)
+        assertEquals(listOf(MeshDirectory.Service("Grafana", "http://grafana.mesh:3000", "app")), d.services)
+        assertEquals(listOf(MeshDirectory.Wol("nas", "aa:bb:cc:dd:ee:ff")), d.wol)
+        // protocol-agnostic Beam target: v4 first, prefix stripped; old hubs fall back to mesh_ip + ip6
+        assertEquals("10.89.200.9", d.devices[0].reachable)
+        assertEquals(listOf("10.90.200.8", "fdee::8"), d.devices[1].addresses)
+        assertEquals(0, MeshDirectory.parse(json).services.size)
+    }
+
+    @Test
+    fun pathClassification() {
+        val names = mapOf("10.90.0.2" to "mini-1")
+        assertEquals(MeshDirectory.PathKind.RELAYED to "mini-1", MeshDirectory.pathOf("relay 10.90.0.2", false, names))
+        assertEquals(MeshDirectory.PathKind.RELAYED to "10.90.0.9", MeshDirectory.pathOf("relay 10.90.0.9", false, names))
+        assertEquals(MeshDirectory.PathKind.DIRECT to null, MeshDirectory.pathOf("192.168.1.5:4242", false, names))
+        assertEquals(MeshDirectory.PathKind.LIGHTHOUSE to null, MeshDirectory.pathOf("1.2.3.4:4242", true, names))
+        assertEquals(MeshDirectory.PathKind.UNKNOWN to null, MeshDirectory.pathOf(null, false, names))
+        assertEquals(80.0, MeshDirectory.mbps(10_000_000, 1.0), 1e-9)
+    }
 }

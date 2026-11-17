@@ -18,8 +18,8 @@ class ServiceManager(private val context: Context) {
         context.stopService(Intent(context, AutoTunnelService::class.java))
     }
 
-    suspend fun startNebula(id: Int, name: String, profileJson: String, yaml: String) =
-        NebulaVpnService.start(context, id, name, profileJson, yaml)
+    suspend fun startNebula(id: Int, name: String, profileJson: String, yaml: String, included: List<String>, excluded: List<String>) =
+        NebulaVpnService.start(context, id, name, profileJson, yaml, included, excluded)
 
     fun stopNebula() = NebulaVpnService.stop(context)
 

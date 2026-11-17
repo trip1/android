@@ -185,3 +185,10 @@ object MeshEnroll {
         }
     }
 }
+
+/** A renewed conf keeps the per-app split lists the user set on the tunnel (gofire never sends them). */
+fun com.wgtunnel.parser.Config.withSplitOf(old: com.wgtunnel.parser.Config): com.wgtunnel.parser.Config =
+    copy(`interface` = `interface`.copy(
+        includedApplications = old.`interface`.includedApplications,
+        excludedApplications = old.`interface`.excludedApplications,
+    ))

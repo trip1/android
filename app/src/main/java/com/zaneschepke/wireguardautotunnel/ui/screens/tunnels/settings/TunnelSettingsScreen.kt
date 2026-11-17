@@ -14,6 +14,7 @@ import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.DataUsage
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.Hub
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.TravelExplore
@@ -28,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.zaneschepke.wireguardautotunnel.R
+import com.zaneschepke.wireguardautotunnel.core.orchestration.DirectPaths
 import com.zaneschepke.wireguardautotunnel.core.orchestration.EndpointLadder
 import androidx.compose.runtime.collectAsState
 import com.zaneschepke.wireguardautotunnel.domain.enums.TunnelMode
@@ -83,13 +85,54 @@ fun TunnelSettingsScreen(
         )
     }
 
+    // both branches: services, Wake-on-LAN, paths + speed test of a gofire mesh tunnel
+    val meshRow: @Composable () -> Unit = {
+        if (remember(tunnel) { DirectPaths.hubOf(tunnel) } != null) {
+            SurfaceRow(
+                leading = { Icon(Icons.Outlined.Hub, contentDescription = null) },
+                title = stringResource(R.string.mesh_title),
+                description = { DescriptionText(stringResource(R.string.mesh_desc)) },
+                onClick = { navController.push(Route.Mesh(tunnel.id)) },
+            )
+        }
+    }
+
+    // both branches: Nebula takes the same per-app lists (NebulaVpnService), and always runs as a VPN
+    val proxy = !tunnel.isNebula && sharedUiState.tunnelMode == TunnelMode.PROXY
+    val splitRow: @Composable () -> Unit = {
+        SurfaceRow(
+            leading = {
+                Icon(
+                    Icons.AutoMirrored.Outlined.CallSplit,
+                    contentDescription = null,
+                    tint =
+                        if (proxy) Disabled
+                        else MaterialTheme.colorScheme.onSurface,
+                )
+            },
+            enabled = !proxy,
+            title = stringResource(R.string.splt_tunneling),
+            description = {
+                if (proxy) {
+                    DescriptionText(
+                        stringResource(R.string.unavailable_in_mode),
+                        disabled = true,
+                    )
+                } else {
+                    uiState.appliedSplit?.let { SplitAppsDescription(it) }
+                }
+            },
+            onClick = { navController.push(Route.SplitTunnel(id = tunnel.id)) },
+        )
+    }
+
     Column(
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.Top),
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
     ) {
         if (tunnel.isNebula) {
-            // WireGuard-only settings (conf, multihop, split, IPv6, DDNS) don't apply
+            // WireGuard-only settings (conf, multihop, IPv6, DDNS) don't apply
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.TravelExplore, contentDescription = null) },
                 title = stringResource(R.string.full_warp),
@@ -98,6 +141,8 @@ fun TunnelSettingsScreen(
                 onClick = { viewModel.onExitNode(!tunnel.isExitNode) },
             )
             primaryRow()
+            splitRow()
+            meshRow()
             uiState.activeConfig?.let { active ->
                 Column {
                     GroupLabel(stringResource(R.string.mesh_sensor_array), modifier = Modifier.padding(horizontal = 16.dp))
@@ -147,6 +192,7 @@ fun TunnelSettingsScreen(
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
             primaryRow()
+            meshRow()
         }
         Column {
             GroupLabel(
@@ -169,30 +215,7 @@ fun TunnelSettingsScreen(
                 stringResource(R.string.network),
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
-            SurfaceRow(
-                leading = {
-                    Icon(
-                        Icons.AutoMirrored.Outlined.CallSplit,
-                        contentDescription = null,
-                        tint =
-                            if (sharedUiState.tunnelMode == TunnelMode.PROXY) Disabled
-                            else MaterialTheme.colorScheme.onSurface,
-                    )
-                },
-                enabled = sharedUiState.tunnelMode != TunnelMode.PROXY,
-                title = stringResource(R.string.splt_tunneling),
-                description = {
-                    if (sharedUiState.tunnelMode == TunnelMode.PROXY) {
-                        DescriptionText(
-                            stringResource(R.string.unavailable_in_mode),
-                            disabled = true,
-                        )
-                    } else {
-                        uiState.appliedSplit?.let { SplitAppsDescription(it) }
-                    }
-                },
-                onClick = { navController.push(Route.SplitTunnel(id = tunnel.id)) },
-            )
+            splitRow()
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.TravelExplore, contentDescription = null) },
                 title = stringResource(R.string.full_warp),

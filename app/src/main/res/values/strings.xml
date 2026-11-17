@@ -755,6 +755,31 @@
     <string name="beam_send">Beam</string>
     <string name="beam_sent">Beamed to %1$s</string>
     <string name="beam_failed">Beam failed: %1$s</string>
+    <string name="mesh_title">Mesh</string>
+    <string name="mesh_desc">Services, Wake-on-LAN, paths and hub speed test</string>
+    <string name="mesh_waiting">Waiting for the mesh directory (start the tunnel)</string>
+    <string name="mesh_services">Services</string>
+    <string name="mesh_wol">Wake-on-LAN</string>
+    <string name="mesh_wake">Wake %1$s</string>
+    <string name="mesh_wake_sent">Magic packet sent to %1$s</string>
+    <string name="mesh_failed">Failed: %1$s</string>
+    <string name="mesh_rate_limited">Rate-limited by the hub (HTTP 429): try again in a minute</string>
+    <string name="mesh_speed_test">Hub speed test</string>
+    <string name="mesh_speed_run">Run speed test (10 MB each way)</string>
+    <string name="mesh_speed_running">Testing…</string>
+    <string name="mesh_speed_result">down %1$.1f Mbit/s · up %2$.1f Mbit/s</string>
+    <string name="mesh_paths">Paths</string>
+    <string name="mesh_path_direct">direct</string>
+    <string name="mesh_path_relayed">relayed via %1$s</string>
+    <string name="mesh_path_lighthouse">hub / lighthouse</string>
+    <string name="mesh_path_unknown">no tunnel yet</string>
+    <string name="widget_off">Transwarp: off</string>
+    <string name="widget_no_exit">mesh only</string>
+    <string name="widget_exit">exit: %1$s</string>
+    <string name="widget_paths">%1$d direct · %2$d relayed</string>
+    <string name="widget_online">%1$d online</string>
+    <string name="widget_turn_on">Turn on</string>
+    <string name="widget_turn_off">Turn off</string>
     <string name="socks5" translatable="false">SOCKS5</string>
     <string name="http" translatable="false">HTTP</string>
 </resources>

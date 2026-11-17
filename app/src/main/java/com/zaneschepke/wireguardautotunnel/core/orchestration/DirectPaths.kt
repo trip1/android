@@ -36,10 +36,7 @@ class DirectPaths(
 
     fun start(tunnel: TunnelConfig, liveStats: Boolean) {
         stop(tunnel.id)
-        if (MeshEnroll.header(tunnel.quickConfig, "Name") == null) return
-        val dns = if (tunnel.isNebula) Nebula.parse(tunnel.nebulaProfile).dns
-            else runCatching { tunnel.getConfig().`interface`.dns }.getOrNull()
-        val hub = dns?.split(',')?.firstOrNull()?.trim()?.takeIf { it.isNotEmpty() } ?: return
+        val hub = hubOf(tunnel) ?: return
         // Nebula: directory only (Beam picker, Sensor Array); Nebula finds direct paths itself
         jobs[tunnel.id] = scope.launch { poll(tunnel.id, hub, liveStats && !tunnel.isNebula) }
     }
@@ -90,6 +87,14 @@ class DirectPaths(
     }
 
     companion object {
+        /** The hub's mesh IP (directory, WoL, speed test) = the tunnel's first DNS server; null for non-mesh tunnels. */
+        fun hubOf(tunnel: TunnelConfig): String? {
+            if (MeshEnroll.header(tunnel.quickConfig, "Name") == null) return null
+            val dns = if (tunnel.isNebula) Nebula.parse(tunnel.nebulaProfile).dns
+                else runCatching { tunnel.getConfig().`interface`.dns }.getOrNull()
+            return dns?.split(',')?.firstOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+        }
+
         val POLL = 30.seconds
         val HANDSHAKE_TIMEOUT = 10.seconds
         private val _directories = MutableStateFlow<Map<Int, MeshDirectory.Directory>>(emptyMap())

@@ -121,7 +121,8 @@ class SplitTunnelViewModel(
         settings: GeneralSettings,
         status: BackendStatus,
     ): Boolean {
-        if (tunnel == null || settings.tunnelMode != TunnelMode.VPN) return false
+        // Nebula always runs as a VpnService, whatever the tunnel mode
+        if (tunnel == null || (settings.tunnelMode != TunnelMode.VPN && !tunnel.isNebula)) return false
         val activeIds = status.activeTunnels.keys
         // Only when this save changes the list a running VPN will use.
         return if (tunnel.isGlobalConfig) {

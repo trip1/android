@@ -67,6 +67,12 @@ class NebulaVpnService : VpnService() {
                 if (p.routes.any { it.cidr == Nebula.DEFAULT_ROUTE }) builder.addRoute("::", 0)
                 if (p.dns.isNotBlank()) builder.addDnsServer(p.dns)
             }
+            // split tunneling (same lists as WireGuard). The app stays inside its own VPN either way: directory, Beam
+            // and renew go over Nebula, and Nebula's own UDP socket is protect()ed
+            val included = intent.getStringArrayListExtra(EXTRA_INCLUDED).orEmpty().filter { it != packageName }
+            val excluded = intent.getStringArrayListExtra(EXTRA_EXCLUDED).orEmpty().filter { it != packageName }
+            if (included.isNotEmpty()) (included + packageName).forEach { runCatching { builder.addAllowedApplication(it) } }
+            else excluded.forEach { runCatching { builder.addDisallowedApplication(it) } } // uninstalled app: skip
             val fd = builder.establish() ?: error("VPN permission revoked")
             tun = fd
             val protector = Protector { sock -> protect(sock.toInt()) }
@@ -109,6 +115,8 @@ class NebulaVpnService : VpnService() {
         private const val EXTRA_NAME = "name"
         private const val EXTRA_PROFILE = "profile"
         private const val EXTRA_YAML = "yaml"
+        private const val EXTRA_INCLUDED = "included"
+        private const val EXTRA_EXCLUDED = "excluded"
 
         private val _active = MutableStateFlow<Pair<Int, Long>?>(null)
         /** (tunnel id, start time ms) of the running Nebula tunnel, or null. */
@@ -117,7 +125,10 @@ class NebulaVpnService : VpnService() {
         @Volatile private var pending: CompletableDeferred<Result<Unit>>? = null
 
         /** Starts (or replaces) the Nebula VPN; returns once Nebula runs or failed. Caller holds the tunnel mutex. */
-        suspend fun start(context: Context, id: Int, name: String, profileJson: String, yaml: String): Result<Unit> {
+        suspend fun start(
+            context: Context, id: Int, name: String, profileJson: String, yaml: String,
+            included: List<String> = emptyList(), excluded: List<String> = emptyList(),
+        ): Result<Unit> {
             val done = CompletableDeferred<Result<Unit>>().also { pending = it }
             context.startForegroundService(
                 Intent(context, NebulaVpnService::class.java)
@@ -126,6 +137,8 @@ class NebulaVpnService : VpnService() {
                     .putExtra(EXTRA_NAME, name)
                     .putExtra(EXTRA_PROFILE, profileJson)
                     .putExtra(EXTRA_YAML, yaml)
+                    .putStringArrayListExtra(EXTRA_INCLUDED, ArrayList(included))
+                    .putStringArrayListExtra(EXTRA_EXCLUDED, ArrayList(excluded))
             )
             return runCatching { withTimeout(20_000) { done.await() } }.getOrElse { Result.failure(it) }
         }

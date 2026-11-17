@@ -49,6 +49,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.NonCancellable
 import kotlin.time.Duration.Companion.minutes
 import com.zaneschepke.wireguardautotunnel.util.network.MeshEnroll
+import com.zaneschepke.wireguardautotunnel.util.network.withSplitOf
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.drop
@@ -199,7 +200,7 @@ class TunnelCoordinator(
         val expiresMs = expires?.let { runCatching { java.time.OffsetDateTime.parse(it).toInstant().toEpochMilli() }.getOrNull() }
         val fresh = Nebula.parse(json).withChoicesOf(old)
         val quick = Config.parseQuickString(
-            MeshEnroll.nebulaPlaceholder(key, fresh.ip, MeshEnroll.header(t.quickConfig, "Name"), expires)).asQuickString()
+            MeshEnroll.nebulaPlaceholder(key, fresh.ip, MeshEnroll.header(t.quickConfig, "Name"), expires)).withSplitOf(t.getConfig()).asQuickString()
         if (fresh == old && quick == t.quickConfig) return expiresMs
         val updated = t.copy(
             quickConfig = quick,
@@ -510,8 +511,14 @@ class TunnelCoordinator(
         if (tunnelProvider.backendStatus.value.activeTunnels.isNotEmpty()) {
             stopActiveTunnelsInternal(source, persistLastActive = false)
         }
+        // split tunneling: the same per-app lists as WireGuard (the tunnel's own, or the global tunnel's when enabled)
+        val splitSource = if (getSnapshot().general.isGlobalSplitTunnelEnabled) tunnelRepository.globalTunnelFlow.firstOrNull() ?: tunnelConfig else tunnelConfig
+        val iface = runCatching { splitSource.getConfig().`interface` }.getOrNull()
         runCatching { tunnelConfig.nebulaYaml() }
-            .mapCatching { serviceManager.startNebula(tunnelConfig.id, tunnelConfig.name, Nebula.encode(tunnelConfig.nebulaRunProfile()), it).getOrThrow() }
+            .mapCatching {
+                serviceManager.startNebula(tunnelConfig.id, tunnelConfig.name, Nebula.encode(tunnelConfig.nebulaRunProfile()), it,
+                    iface?.allIncludedApps.orEmpty(), iface?.allExcludedApps.orEmpty()).getOrThrow()
+            }
             .onSuccess {
                 _actions.emit(TunnelActionEvent.Started(tunnelId = tunnelConfig.id, source = source))
                 replaceLastActiveTunnelIds(setOf(tunnelConfig.id))

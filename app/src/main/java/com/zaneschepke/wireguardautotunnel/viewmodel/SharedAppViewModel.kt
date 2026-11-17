@@ -49,6 +49,7 @@ import com.zaneschepke.wireguardautotunnel.util.extensions.asStringValue
 import com.zaneschepke.wireguardautotunnel.util.extensions.isFileAccessDenied
 import com.zaneschepke.wireguardautotunnel.util.extensions.saveTunnelsUniquely
 import com.zaneschepke.wireguardautotunnel.util.network.MeshEnroll
+import com.zaneschepke.wireguardautotunnel.util.network.withSplitOf
 import com.zaneschepke.wireguardautotunnel.util.network.Nebula
 import com.zaneschepke.wireguardautotunnel.util.network.NetworkUtils
 import io.ktor.client.HttpClient
@@ -691,7 +692,7 @@ class SharedAppViewModel(
                 // a Nebula renewal that newly grants an exit turns Full Warp on; one that drops it turns it off
                 val exitNow = code.nebula && profile.isNotEmpty() && Nebula.parse(profile).hasExit
                 val exitBefore = existing.isNebula && Nebula.parse(existing.nebulaProfile).hasExit
-                val updated = existing.copy(quickConfig = parsed.asQuickString(), nebulaProfile = profile,
+                val updated = existing.copy(quickConfig = parsed.withSplitOf(existing.getConfig()).asQuickString(), nebulaProfile = profile,
                     isExitNode = if (code.nebula && exitNow != exitBefore) exitNow else existing.isExitNode)
                 tunnelRepository.save(updated)
                 if (tunnelCoordinator.backendStatus.value.activeTunnels.containsKey(existing.id)) {

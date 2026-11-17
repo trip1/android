@@ -137,6 +137,7 @@ import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.settings.TunnelSet
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.settings.config.ConfigScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.settings.config.edit.ConfigEditScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.settings.entry.EntryTunnelScreen
+import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.settings.MeshScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.settings.ipv6.IPv6Screen
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.splittunnel.SplitTunnelScreen
 import com.zaneschepke.wireguardautotunnel.ui.theme.AlertRed
@@ -698,6 +699,13 @@ class MainActivity : AppCompatActivity() {
                                                             parameters = { parametersOf(key.id) }
                                                         )
                                                     IPv6Screen(viewModel)
+                                                }
+                                                entry<Route.Mesh> { key ->
+                                                    val viewModel: TunnelViewModel =
+                                                        koinViewModel(
+                                                            parameters = { parametersOf(key.id) }
+                                                        )
+                                                    MeshScreen(viewModel)
                                                 }
                                                 entry<Route.EntryTunnel> { key ->
                                                     val viewModel: TunnelViewModel =

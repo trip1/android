@@ -43,6 +43,8 @@ class NotificationActionReceiver : BroadcastReceiver(), KoinComponent {
                     tunnelCoordinator.stopTunnel(tunnelId)
                 }
 
+                NotificationAction.TOGGLE.name -> tunnelCoordinator.toggleActiveTunnels()
+
                 NotificationAction.STOP_ALL.name -> {
                     tunnelCoordinator.stopActiveTunnels()
                 }

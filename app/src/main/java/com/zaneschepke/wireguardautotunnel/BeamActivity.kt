@@ -78,14 +78,15 @@ class BeamActivity : ComponentActivity() {
                             if (peers.isEmpty() && directory == null) Text(stringResource(R.string.beam_no_peers))
                             peers.forEach { (host, label) -> TextButton(onClick = { beam(host) }) { Text(label) } }
                             directory?.devices?.filter { it.meshIp != directory.selfIp }?.forEach { d ->
-                                TextButton(onClick = { beam(d.meshIp) }) {
+                                // any protocol: the device's directory addresses, v4 first (MeshDirectory.Device.reachable)
+                                TextButton(onClick = { beam(d.reachable) }) {
                                     Icon(
                                         Icons.Rounded.Circle,
                                         contentDescription = stringResource(if (d.online) R.string.peer_online else R.string.peer_offline),
                                         tint = if (d.online) SilverTree else AlertRed,
                                         modifier = Modifier.size(12.dp),
                                     )
-                                    Text("  ${d.name}.mesh  ${d.meshIp}")
+                                    Text("  ${d.name}.mesh  ${d.reachable}")
                                 }
                             }
                             ConfigurationTextBox(
