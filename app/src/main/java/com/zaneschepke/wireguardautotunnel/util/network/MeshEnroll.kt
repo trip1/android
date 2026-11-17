@@ -47,10 +47,8 @@ object MeshEnroll {
      * Stored quickConfig of a Nebula tunnel: keeps the private key plus the Transwarp-Name / -Expires headers that
      * renew-in-place and the expiry warnings already read, and parses like any peerless conf.
      */
-    fun nebulaPlaceholder(privateKey: String, ip: String, name: String?, expiresAt: String?,
-        renewedAt: String = java.time.Instant.now().toString()): String =
-        listOfNotNull(name?.let { "# Transwarp-Name = $it" }, expiresAt?.let { "# Transwarp-Expires = $it" },
-            "# Transwarp-Renewed = $renewedAt")
+    fun nebulaPlaceholder(privateKey: String, ip: String, name: String?, expiresAt: String?): String =
+        listOfNotNull(name?.let { "# Transwarp-Name = $it" }, expiresAt?.let { "# Transwarp-Expires = $it" })
             .plus(listOf("[Interface]", "PrivateKey = $privateKey", "Address = $ip"))
             .joinToString("\n")
 
@@ -97,11 +95,8 @@ object MeshEnroll {
 
     /** Whole days until `# Transwarp-Expires` (negative = expired), or null when it never expires. */
     fun expiresInDays(conf: String, nowMs: Long = System.currentTimeMillis()): Long? =
-        headerMs(conf, "Expires")?.let { exp -> if (exp <= nowMs) -1 else (exp - nowMs) / 86_400_000 }
-
-    /** Epoch ms of an ISO-8601 `# Transwarp-<key>` header, or null. */
-    fun headerMs(conf: String, key: String): Long? =
-        header(conf, key)?.let { runCatching { OffsetDateTime.parse(it).toInstant().toEpochMilli() }.getOrNull() }
+        header(conf, "Expires")?.let { runCatching { OffsetDateTime.parse(it).toInstant().toEpochMilli() }.getOrNull() }
+            ?.let { exp -> if (exp <= nowMs) -1 else (exp - nowMs) / 86_400_000 }
 
     /**
      * Blocking. Renews a Nebula cert over the tunnel (`POST /v1/mesh/nebula/renew`, the same key re-signed):

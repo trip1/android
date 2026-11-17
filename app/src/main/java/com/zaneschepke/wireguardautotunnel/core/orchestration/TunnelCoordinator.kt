@@ -168,9 +168,9 @@ class TunnelCoordinator(
     private val directPaths = DirectPaths(scope, backendStatus, tunnelProvider)
 
     /**
-     * Nebula auto-renew (Phase 34): the running Nebula tunnel renews over the tunnel at half-life and refreshes its
-     * profile (rules, exits, lighthouses) every 6 h; a failure retries in 15 min. Expired certs can't connect, so
-     * they still need a QR renew.
+     * Nebula auto-renew (Phase 34): the running Nebula tunnel calls the hub's renew route on start and every 6 h (half
+     * the TTL when shorter). The hub decides: before half-life it is a refresh (rules, exits, lighthouses), past it a new
+     * cert. A failure retries in 15 min. Expired certs can't connect, so they still need a QR renew.
      */
     private fun nebulaRenewLoop(scope: CoroutineScope) = scope.launch {
         NebulaVpnService.active.map { it?.first }.distinctUntilChanged().collectLatest { id ->
@@ -178,40 +178,46 @@ class TunnelCoordinator(
             delay(10.seconds) // let the first handshake to the hub finish
             while (true) {
                 val t = tunnelRepository.getById(id)?.takeIf { it.isNebula } ?: return@collectLatest
-                val due = Nebula.renewDueAt(MeshEnroll.headerMs(t.quickConfig, "Renewed"), MeshEnroll.headerMs(t.quickConfig, "Expires"))
-                delay((due - System.currentTimeMillis()).coerceAtLeast(0))
-                runCatching { renewNebula(t) }.onFailure {
-                    Timber.w(it, "Nebula renew failed")
-                    delay(15.minutes)
-                }
+                val wait = runCatching { renewNebula(t) }
+                    .onFailure { Timber.w(it, "Nebula renew failed") }
+                    .map { Nebula.renewDueAt(System.currentTimeMillis(), it) - System.currentTimeMillis() }
+                    .getOrDefault(15.minutes.inWholeMilliseconds)
+                delay(wait)
             }
         }
     }
 
-    /** Saves the renewed profile in place; reloads Nebula when the VPN interface is unchanged, else restarts. */
-    private suspend fun renewNebula(t: TunnelConfig) {
+    /**
+     * Saves the renewed profile in place (only when it changed) and reloads Nebula when the VPN interface is
+     * unchanged, else restarts the tunnel. Returns the cert's expiry (epoch ms) or null.
+     */
+    private suspend fun renewNebula(t: TunnelConfig): Long? {
         val old = Nebula.parse(t.nebulaProfile)
         val key = t.getConfig().`interface`.privateKey
         val (json, expires) = withContext(Dispatchers.IO) { MeshEnroll.renewNebula(old.dns, Config.generatePublicKeyFromPrivateKey(key)) }
+        val expiresMs = expires?.let { runCatching { java.time.OffsetDateTime.parse(it).toInstant().toEpochMilli() }.getOrNull() }
         val fresh = Nebula.parse(json).copy(role = old.role, listenPort = old.listenPort)
+        val quick = Config.parseQuickString(
+            MeshEnroll.nebulaPlaceholder(key, fresh.ip, MeshEnroll.header(t.quickConfig, "Name"), expires)).asQuickString()
+        if (fresh == old && quick == t.quickConfig) return expiresMs
         val updated = t.copy(
-            quickConfig = Config.parseQuickString(
-                MeshEnroll.nebulaPlaceholder(key, fresh.ip, MeshEnroll.header(t.quickConfig, "Name"), expires)).asQuickString(),
+            quickConfig = quick,
             nebulaProfile = Nebula.encode(fresh),
             // like a QR renew: a newly granted exit turns Full Warp on, a dropped one off
             isExitNode = if (fresh.hasExit != old.hasExit) fresh.hasExit else t.isExitNode,
         )
         tunnelRepository.save(updated)
-        Timber.i("Nebula ${t.name} renewed, expires $expires")
-        if (NebulaVpnService.active.value?.first != t.id) return
+        Timber.i("Nebula ${t.name} profile renewed, expires $expires")
+        if (NebulaVpnService.active.value?.first != t.id) return expiresMs
         if (updated.nebulaRunProfile().sameVpn(t.nebulaRunProfile())) {
             val yaml = updated.nebulaYaml()
             val reloaded = withContext(Nebula.dispatcher) { runCatching { Nebmobile.reload(yaml) } }
-            if (reloaded.isSuccess) return
+            if (reloaded.isSuccess) return expiresMs.also { Timber.i("Nebula ${t.name} reloaded in place") }
             Timber.i(reloaded.exceptionOrNull(), "Nebula reload refused, restarting")
         }
         stopTunnel(t.id)
         startTunnel(updated)
+        return expiresMs
     }
 
     init {

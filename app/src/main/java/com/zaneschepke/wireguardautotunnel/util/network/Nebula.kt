@@ -86,15 +86,12 @@ object Nebula {
         return java.net.InetAddress.getByAddress(b).hostAddress!! + "/$n"
     }
 
-    /** Renew/refresh every 6 h (rules, exits) and at the latest at half-life (contract Phase B). */
+    /** Renew/refresh every 6 h (rules, exits; the hub re-signs past half-life). */
     const val REFRESH_MS = 6 * 3_600_000L
 
-    /** When the next renew is due: 6 h after the last one, earlier for a TTL under 12 h; now when never renewed. */
-    fun renewDueAt(renewedMs: Long?, expiresMs: Long?): Long {
-        renewedMs ?: return 0
-        val half = expiresMs?.let { (it - renewedMs) / 2 } ?: REFRESH_MS
-        return renewedMs + minOf(REFRESH_MS, half)
-    }
+    /** Next renew call after one at [nowMs]: 6 h, or half the time left for a short-lived cert. */
+    fun renewDueAt(nowMs: Long, expiresMs: Long?): Long =
+        nowMs + minOf(REFRESH_MS, expiresMs?.let { ((it - nowMs) / 2).coerceAtLeast(60_000) } ?: REFRESH_MS)
 
     const val DEFAULT_ROUTE = "0.0.0.0/0"
     const val ROLE_CLIENT = "client"
