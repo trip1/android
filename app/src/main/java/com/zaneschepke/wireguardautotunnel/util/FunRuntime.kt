@@ -112,6 +112,10 @@ class TravelLog(
                     open[id] = Open(row.copy(id = runCatching { dao.insert(row) }.getOrDefault(0)), now)
                 } else {
                     // ponytail: counters that reset mid-session (backend recovery) keep the larger value, not the sum
+                    // restored at process start before connectivity is known: fill the network in once it is
+                    if (o.row.network == "Offline") start(now, o.row.tunnelName).let { f ->
+                        o.row = o.row.copy(network = f.network, ssid = f.ssid, country = f.country ?: o.row.country)
+                    }
                     o.row = o.row.copy(endMs = now, rxBytes = maxOf(o.row.rxBytes, rx), txBytes = maxOf(o.row.txBytes, tx),
                         relayed = o.row.relayed || relayed)
                     if (now - o.savedAt > 60_000) { save(o.row); o.savedAt = now }

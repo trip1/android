@@ -21,10 +21,11 @@ object MeshMapLayout {
 
     /** One position per hub, then one per ring node (ring node 0 at the top). */
     fun positions(hubs: Int, ring: Int): List<Pair<Float, Float>> =
-        circle(hubs, if (hubs <= 1) 0f else HUB_RING) + circle(ring, RING)
+        // hubs start on the horizontal axis so the top node's lines to them don't run through each other
+        circle(hubs, if (hubs <= 1) 0f else HUB_RING, 0.0) + circle(ring, RING, -PI / 2)
 
-    private fun circle(n: Int, r: Float) = List(n) { i ->
-        val a = -PI / 2 + 2 * PI * i / n
+    private fun circle(n: Int, r: Float, start: Double) = List(n) { i ->
+        val a = start + 2 * PI * i / n
         (r * cos(a)).toFloat() to (r * sin(a)).toFloat()
     }
 }

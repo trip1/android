@@ -86,16 +86,18 @@ fun MeshMapScreen(viewModel: TunnelViewModel) {
     // traffic key per peer = publicKey (WireGuard) / cert name (Nebula); counters summed
     val traffic = peers.associate { it.publicKey to (it.rxBytes ?: 0L) + (it.txBytes ?: 0L) }
     val hubPeerKey = if (profile == null) peers.firstOrNull { it.publicKey !in direct }?.publicKey else null
-    fun peerOf(addrs: List<String>) = peers.firstOrNull { p -> p.allowedIPs.orEmpty().split(',').any { it.trim().substringBefore('/') in addrs } }
+    // Nebula hosts are keyed by cert name (= directory name); the directory may list only the WG-side address
+    fun peerOf(addrs: List<String>, name: String? = null) = peers.firstOrNull { p -> p.allowedIPs.orEmpty().split(',').any { it.trim().substringBefore('/') in addrs } }
+        ?: peers.firstOrNull { it.publicKey == name }
 
     val devices = dir?.devices.orEmpty().filter { it.meshIp != dir?.selfIp }
     val hubs = devices.filter { d -> d.kind == "node" || d.addresses.any { it in lighthouses } }
     val hubNodes = hubs.map { d ->
-        MapNode(d.name, d.online, true, null, if (profile != null) peerOf(d.addresses)?.publicKey else hubPeerKey)
+        MapNode(d.name, d.online, true, null, if (profile != null) peerOf(d.addresses, d.name)?.publicKey else hubPeerKey)
     }.ifEmpty { listOf(MapNode(lighthouses.getValue(hub), true, true, null, hubPeerKey)) }
     val names = devices.associate { it.meshIp to it.name } + lighthouses
     val ring = devices.filter { it !in hubs }.map { d ->
-        val p = if (profile != null) peerOf(d.addresses) else null
+        val p = if (profile != null) peerOf(d.addresses, d.name) else null
         val isDirect = if (profile != null) p?.endpoint?.let { !it.startsWith("relay ") } == true else d.publicKey in direct
         val via = when {
             isDirect -> null
@@ -114,7 +116,7 @@ fun MeshMapScreen(viewModel: TunnelViewModel) {
     }
 
     val primary = MaterialTheme.colorScheme.primary
-    val secondary = MaterialTheme.colorScheme.secondary
+    val secondary = MaterialTheme.colorScheme.outline // visible on every theme (secondary is a dark panel colour on Dark)
     val fg = MaterialTheme.colorScheme.onSurface
     val off = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
     val measurer = rememberTextMeasurer()
@@ -164,11 +166,11 @@ fun WarpGauge(mbps: Double?, modifier: Modifier = Modifier) {
     val warp = mbps?.let(Warp::factor) ?: 1.0
     val shown by animateFloatAsState(warp.toFloat(), spring(dampingRatio = 0.45f, stiffness = 40f), label = "warp")
     val primary = MaterialTheme.colorScheme.primary
-    val track = MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f)
+    val track = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
     val fg = MaterialTheme.colorScheme.onSurface
     val measurer = rememberTextMeasurer()
-    Canvas(modifier.fillMaxWidth().height(150.dp).padding(horizontal = 16.dp)) {
-        val r = minOf(size.width / 2, size.height) * 0.9f
+    Canvas(modifier.fillMaxWidth().height(170.dp).padding(horizontal = 16.dp)) {
+        val r = minOf(size.width / 2, size.height * 0.75f) * 0.95f
         val c = Offset(size.width / 2, size.height * 0.95f)
         val topLeft = Offset(c.x - r, c.y - r)
         val arc = androidx.compose.ui.geometry.Size(2 * r, 2 * r)
@@ -178,7 +180,7 @@ fun WarpGauge(mbps: Double?, modifier: Modifier = Modifier) {
         rotate(180f * frac - 90f, c) { drawLine(fg, c, Offset(c.x, c.y - r * 0.8f), strokeWidth = 6f, cap = StrokeCap.Round) }
         drawCircle(primary, 12f, c)
         val t = measurer.measure("WARP %.2f".format(shown), TextStyle(color = fg, fontSize = 18.sp))
-        drawText(t, topLeft = Offset(c.x - t.size.width / 2, c.y - r * 0.55f))
+        drawText(t, topLeft = Offset(c.x - t.size.width / 2, 0f)) // above the arc, clear of the needle
     }
 }
 

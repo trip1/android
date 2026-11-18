@@ -67,6 +67,7 @@ class FunTest {
         assertTrue(abs(one[1].first) < 1e-4f && one[1].second < 0) // ring node 0 (this device) at the top
         val two = MeshMapLayout.positions(2, 3)
         two.take(2).forEach { (x, y) -> assertEquals(MeshMapLayout.HUB_RING, hypot(x, y), 1e-4f) }
-        assertEquals(two[0].second, -two[1].second, 1e-4f)
+        assertEquals(0f, two[0].second, 1e-4f) // two hubs side by side
+        assertEquals(two[0].first, -two[1].first, 1e-4f)
     }
 }
