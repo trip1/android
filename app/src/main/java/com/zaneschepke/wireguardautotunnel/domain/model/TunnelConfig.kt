@@ -31,6 +31,8 @@ data class TunnelConfig(
     val isExitNode: Boolean = false,
     /** "" = WireGuard; else the Nebula profile JSON ([Nebula.Profile]). [quickConfig] is then a peerless placeholder. */
     val nebulaProfile: String = "",
+    /** Cloaking device: force the wss:// relay rung of [endpointLadder] (traffic looks like HTTPS). */
+    val isCloaked: Boolean = false,
 ) {
     val isNebula: Boolean
         get() = nebulaProfile.isNotEmpty()
@@ -56,6 +58,10 @@ data class TunnelConfig(
         MeshEnroll.endpointLadder(quickConfig).ifEmpty {
             listOfNotNull(runCatching { getConfig() }.getOrNull()?.peers?.firstNotNullOfOrNull { it.endpoint })
         }
+
+    /** Ladder index of the wss:// relay rung, null when this tunnel has none (cloaking unavailable). */
+    fun cloakStep(): Int? =
+        endpointLadder().indexOfFirst { it.startsWith("wss://") || it.startsWith("ws://") }.takeIf { it > 0 }
 
     /**
      * Config handed to the backend: stored conf with the hub Endpoint (ladder entry 0) swapped for

@@ -15,6 +15,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -54,7 +55,11 @@ enum class Theme {
     AMOLED,
     DYNAMIC,
     AMOLED_DYNAMIC,
+    STARSHIP,
 }
+
+/** True under the Starship theme: panels get bolder, rounder shapes ([SurfaceRow]). */
+val LocalStarship = staticCompositionLocalOf { false }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,6 +101,18 @@ fun WireguardAutoTunnelTheme(theme: Theme = Theme.AUTOMATIC, content: @Composabl
                 } else {
                     autoTheme
                 }
+            }
+            Theme.STARSHIP -> {
+                isDark = true
+                DarkColorScheme.copy(
+                    primary = StarshipOrange,
+                    secondary = StarshipLilac,
+                    tertiary = StarshipBlue,
+                    outline = StarshipLilac,
+                    surface = StarshipPanel,
+                    background = Color.Black,
+                    onSecondaryContainer = StarshipOrange,
+                )
             }
             Theme.AMOLED_DYNAMIC -> {
                 isDark = true
@@ -147,7 +164,7 @@ fun WireguardAutoTunnelTheme(theme: Theme = Theme.AUTOMATIC, content: @Composabl
                     ),
         )
 
-    CompositionLocalProvider(LocalRippleConfiguration provides rippleConfig) {
+    CompositionLocalProvider(LocalRippleConfiguration provides rippleConfig, LocalStarship provides (theme == Theme.STARSHIP)) {
         MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
     }
 }

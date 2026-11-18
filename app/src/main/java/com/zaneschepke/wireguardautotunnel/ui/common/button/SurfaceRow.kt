@@ -40,6 +40,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.zaneschepke.wireguardautotunnel.ui.LocalIsAndroidTV
 import com.zaneschepke.wireguardautotunnel.ui.theme.Disabled
+import com.zaneschepke.wireguardautotunnel.ui.theme.LocalStarship
 
 @Composable
 fun SurfaceRow(
@@ -61,7 +62,10 @@ fun SurfaceRow(
     val mainFocusRequester = remember { FocusRequester() }
     val trailingFocusRequester = remember { FocusRequester() }
 
+    val starship = LocalStarship.current
     val lcarsShape =
+        if (starship) RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp, topEnd = 12.dp, bottomEnd = 12.dp)
+        else
         RoundedCornerShape(
             topStart = 18.dp,
             bottomStart = 18.dp,
@@ -75,9 +79,10 @@ fun SurfaceRow(
                 .padding(horizontal = 8.dp, vertical = 2.dp)
                 .clip(lcarsShape)
                 .border(
-                    width = 1.dp,
+                    width = if (starship) 2.dp else 1.dp,
                     color =
                         if (selected) MaterialTheme.colorScheme.primary
+                        else if (starship) MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
                         else MaterialTheme.colorScheme.outline.copy(alpha = 0.28f),
                     shape = lcarsShape,
                 )

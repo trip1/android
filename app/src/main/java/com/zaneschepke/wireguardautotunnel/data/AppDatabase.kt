@@ -16,6 +16,7 @@ import com.zaneschepke.wireguardautotunnel.data.dao.MonitoringSettingsDao
 import com.zaneschepke.wireguardautotunnel.data.dao.ProxySettingsDao
 import com.zaneschepke.wireguardautotunnel.data.dao.TunnelConfigDao
 import com.zaneschepke.wireguardautotunnel.data.dao.TunnelGroupDao
+import com.zaneschepke.wireguardautotunnel.data.dao.TravelSessionDao
 import com.zaneschepke.wireguardautotunnel.data.entity.AutoTunnelSettings
 import com.zaneschepke.wireguardautotunnel.data.entity.DnsSettings
 import com.zaneschepke.wireguardautotunnel.data.entity.GeneralSettings
@@ -24,6 +25,7 @@ import com.zaneschepke.wireguardautotunnel.data.entity.MonitoringSettings
 import com.zaneschepke.wireguardautotunnel.data.entity.ProxySettings
 import com.zaneschepke.wireguardautotunnel.data.entity.TunnelConfig
 import com.zaneschepke.wireguardautotunnel.data.entity.TunnelGroup
+import com.zaneschepke.wireguardautotunnel.data.entity.TravelSession
 
 @Database(
     entities =
@@ -36,8 +38,9 @@ import com.zaneschepke.wireguardautotunnel.data.entity.TunnelGroup
             MonitoringSettings::class,
             DnsSettings::class,
             LockdownSettings::class,
+            TravelSession::class,
         ],
-    version = 43,
+    version = 44,
     autoMigrations =
         [
             AutoMigration(from = 1, to = 2),
@@ -79,6 +82,7 @@ import com.zaneschepke.wireguardautotunnel.data.entity.TunnelGroup
             AutoMigration(from = 40, to = 41),
             AutoMigration(from = 41, to = 42),
             AutoMigration(from = 42, to = 43),
+            AutoMigration(from = 43, to = 44),
         ],
     exportSchema = true,
 )
@@ -99,6 +103,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun lockdownSettingsDao(): LockdownSettingsDao
 
     abstract fun dnsSettingsDao(): DnsSettingsDao
+
+    abstract fun travelSessionDao(): TravelSessionDao
 }
 
 @DeleteColumn(tableName = "Settings", columnName = "default_tunnel")

@@ -16,6 +16,7 @@ import com.zaneschepke.wireguardautotunnel.service.ServiceManager
 import com.zaneschepke.wireguardautotunnel.service.autotunnel.AutoTunnelStateHolder
 import com.zaneschepke.wireguardautotunnel.util.FileUtils
 import com.zaneschepke.wireguardautotunnel.util.network.BeamReceiver
+import com.zaneschepke.wireguardautotunnel.util.TravelLog
 import com.zaneschepke.wireguardautotunnel.util.network.NetworkUtils
 import com.zaneschepke.wireguardautotunnel.viewmodel.AutoTunnelViewModel
 import com.zaneschepke.wireguardautotunnel.viewmodel.ConfigEditViewModel
@@ -79,6 +80,7 @@ val appModule = module {
 
     single { NetworkUtils(get(named(Dispatcher.IO))) }
     single { BeamReceiver(androidContext(), get(), get(), get(), get(named(Dispatcher.IO))) }
+    single { TravelLog(androidContext(), get(), get(), get(), get(), get(named(Dispatcher.IO))) }
 
     viewModelOf(::AutoTunnelViewModel)
     viewModel { (id: Int?) -> ConfigEditViewModel(get(), get(), get(), get(), get(), get(), id) }

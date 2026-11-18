@@ -26,6 +26,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.AlertDialog
@@ -37,6 +38,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.zaneschepke.wireguardautotunnel.data.DataStoreManager
+import com.zaneschepke.wireguardautotunnel.util.Party
+import org.koin.compose.koinInject
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -113,6 +119,11 @@ fun MeshAdminScreen(viewModel: TunnelViewModel) {
     var adding by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<MeshAdmin.Client?>(null) }
     var form by remember { mutableStateOf<String?>(null) } // "rule" | "wol" | "service"
+    // LAN party: guest names this phone created (DataStore) and the codes still to show, one QR at a time
+    val dataStore: DataStoreManager = koinInject()
+    val partyNames by dataStore.getFromStoreFlow(PARTY_KEY).collectAsState(initial = null)
+    var partyCodes by remember { mutableStateOf(emptyList<Pair<String, String>>()) }
+    var partyForm by remember { mutableStateOf(false) }
 
     LaunchedEffect(refresh) {
         withContext(Dispatchers.IO) {
@@ -142,11 +153,64 @@ fun MeshAdminScreen(viewModel: TunnelViewModel) {
         }
     }
 
+    /** Start party: one screen-lock prompt, then a Nebula guest per name (no lan/exit/peers flags, no firewall rules). */
+    fun startParty(names: List<String>, ttl: String) {
+        val activity = context.activity() ?: return
+        scope.launch {
+            if (!authenticate(activity)) return@launch toast(context.getString(R.string.admin_cancelled))
+            val codes = mutableListOf<Pair<String, String>>()
+            for (n in names) {
+                val r = withContext(Dispatchers.IO) {
+                    runCatching { MeshAdmin.codeOf(MeshAdmin.call(hub, "POST", MeshAdmin.path("clients"), MeshAdmin.NewClient(n, nebula = true, ttl = ttl).json())) }
+                }
+                r.onSuccess { codes += n to it }.onFailure { toast(context.getString(R.string.mesh_failed, it.message.orEmpty())) }
+                // track as soon as it exists on the hub, so End party can revoke it even if a later create fails
+                if (r.isSuccess) dataStore.saveToDataStore(PARTY_KEY, Party.encode(Party.decode(dataStore.getFromStore(PARTY_KEY)) + n))
+                if (r.isFailure) break
+            }
+            partyCodes = codes
+            refresh++
+        }
+    }
+
+    /** End party: revoke every tracked party-* name the hub still lists; failures stay tracked for the next tap. */
+    fun endParty() {
+        val activity = context.activity() ?: return
+        scope.launch {
+            if (!authenticate(activity)) return@launch toast(context.getString(R.string.admin_cancelled))
+            val tracked = Party.decode(dataStore.getFromStore(PARTY_KEY))
+            val left = withContext(Dispatchers.IO) {
+                runCatching {
+                    val onHub = MeshAdmin.parseClients(MeshAdmin.call(hub, "GET", MeshAdmin.path("clients"))).map { it.name }
+                    Party.revokeList(tracked, onHub).filter { n -> runCatching { MeshAdmin.call(hub, "DELETE", MeshAdmin.path("clients", n)) }.isFailure }
+                }
+            }.onFailure { toast(context.getString(R.string.mesh_failed, it.message.orEmpty())) }.getOrDefault(tracked)
+            if (left.isEmpty()) dataStore.removeFromDataStore(PARTY_KEY) else {
+                dataStore.saveToDataStore(PARTY_KEY, Party.encode(left))
+                toast(context.getString(R.string.party_left, left.size))
+            }
+            refresh++
+        }
+    }
+
     Column(
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.Top),
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
     ) {
+        Column {
+            GroupLabel(stringResource(R.string.party_title), modifier = Modifier.padding(horizontal = 16.dp))
+            val tracked = Party.decode(partyNames)
+            if (tracked.isEmpty()) {
+                SurfaceRow(leading = { Icon(Icons.Outlined.Celebration, contentDescription = null) },
+                    title = stringResource(R.string.party_start), onClick = { partyForm = true })
+            } else {
+                SurfaceRow(leading = { Icon(Icons.Outlined.Celebration, contentDescription = null) },
+                    title = stringResource(R.string.party_end), description = { DescriptionText(tracked.joinToString(", ")) },
+                    onClick = { endParty() })
+            }
+            DescriptionText(stringResource(R.string.party_help), Modifier.padding(horizontal = 16.dp))
+        }
         error?.let { DescriptionText(stringResource(R.string.mesh_failed, it), Modifier.padding(horizontal = 16.dp)) }
         Column {
             GroupLabel(stringResource(R.string.admin_clients), modifier = Modifier.padding(horizontal = 16.dp))
@@ -212,6 +276,40 @@ fun MeshAdminScreen(viewModel: TunnelViewModel) {
         }
     }
     code?.let { (name, c) -> CodeDialog(name, c) { code = null } }
+    partyCodes.firstOrNull()?.let { (name, c) -> CodeDialog(name, c) { partyCodes = partyCodes.drop(1) } }
+    if (partyForm) PartyDialog(onDismiss = { partyForm = false }) { names, ttl -> partyForm = false; startParty(names, ttl) }
+}
+
+private val PARTY_KEY = stringPreferencesKey("PARTY_GUESTS")
+
+@Composable
+private fun PartyDialog(onDismiss: () -> Unit, onStart: (List<String>, String) -> Unit) {
+    var word by remember { mutableStateOf(Party.WORDS.random()) }
+    var count by remember { mutableStateOf("2") }
+    var ttl by remember { mutableStateOf(Party.TTLS.first()) }
+    var ttlOpen by remember { mutableStateOf(false) }
+    val names = Party.names(word, count.toIntOrNull() ?: 2)
+    InfoDialog(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.party_start),
+        body = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ConfigurationTextBox(value = word, label = stringResource(R.string.party_word), hint = "nova",
+                    onValueChange = { word = it.trim().lowercase() })
+                ConfigurationTextBox(value = count, label = stringResource(R.string.party_count, Party.MAX_GUESTS), hint = "2",
+                    onValueChange = { count = it.filter(Char::isDigit).take(1) })
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.admin_ttl) + "  ")
+                    DropdownSelector(ttl, Party.TTLS, onValueSelected = { ttl = it ?: Party.TTLS.first() }, isExpanded = ttlOpen,
+                        onDismiss = { ttlOpen = false }, modifier = Modifier.clickable { ttlOpen = true }.padding(4.dp),
+                        optionToString = { it.orEmpty() })
+                }
+                DescriptionText(names.joinToString(", "))
+            }
+        },
+        confirmText = stringResource(R.string.party_go),
+        onAttest = { onStart(names, ttl) },
+    )
 }
 
 @Composable

@@ -1,6 +1,8 @@
 package com.zaneschepke.wireguardautotunnel
 
 import com.zaneschepke.wireguardautotunnel.service.TunnelWidget
+import com.zaneschepke.wireguardautotunnel.util.TravelLog
+import com.zaneschepke.wireguardautotunnel.util.UiSounds
 import com.zaneschepke.wireguardautotunnel.util.network.BeamReceiver
 import android.app.Application
 import android.content.ComponentCallbacks2
@@ -122,6 +124,8 @@ class WireGuardAutoTunnel : Application(), KoinComponent {
         get<TunnelOriginHolder>().bind(applicationScope, tunnelCoordinator.actions)
         get<AppProvider>().bind(applicationScope)
         get<BeamReceiver>().bind(applicationScope)
+        UiSounds.bind(applicationScope, get(), tunnelCoordinator)
+        get<TravelLog>().bind(applicationScope)
         TunnelWidget.bind(this, applicationScope)
 
         ExpiryWorker.start(this)

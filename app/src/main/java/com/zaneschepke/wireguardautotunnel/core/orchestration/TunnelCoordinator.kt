@@ -412,7 +412,9 @@ class TunnelCoordinator(
         val monitoringSettings = snapshot.monitoring
         val lockdownSettings = snapshot.lockdown
 
-        var config = tunnelConfig.getRunConfig(ladder.prepare(tunnelConfig, ladderStep))
+        // cloaking device: pin the wss:// relay rung, whatever step was asked for
+        val cloakStep = tunnelConfig.cloakStep()?.takeIf { tunnelConfig.isCloaked }
+        var config = tunnelConfig.getRunConfig(ladder.prepare(tunnelConfig, cloakStep ?: ladderStep))
 
         // makes sure Amnezia configs are 2.0 compatible
         config = AmneziaConfigNormalizer.ensureAmneziaCompatibility(config)
@@ -487,7 +489,7 @@ class TunnelCoordinator(
                     tunnelProvider.backendStatus.value.activeTunnels.keys + tunnelConfig.id
                 )
                 // the handshake check reads live stats; without them the ladder stays on its entry
-                if (monitoringSettings.tunnelStatisticsEnabled) {
+                if (monitoringSettings.tunnelStatisticsEnabled && cloakStep == null) {
                     ladder.watch(tunnelConfig, monitoringSettings.tunnelStatisticsPollInterval) {
                         restartOnLadder(tunnelConfig.id, it, source)
                     }
@@ -568,11 +570,15 @@ class TunnelCoordinator(
     }
 
     /** Persists Full Warp and restarts the tunnel if it's running so the new routes apply. */
-    suspend fun setExitNode(tunnel: TunnelConfig, to: Boolean) {
-        val updated = tunnel.copy(isExitNode = to)
+    suspend fun setExitNode(tunnel: TunnelConfig, to: Boolean) = saveAndRestart(tunnel.copy(isExitNode = to))
+
+    /** Cloaking device on/off: restarts a running tunnel on the relay rung (or back on entry 0). */
+    suspend fun setCloaked(tunnel: TunnelConfig, to: Boolean) = saveAndRestart(tunnel.copy(isCloaked = to))
+
+    private suspend fun saveAndRestart(updated: TunnelConfig) {
         tunnelRepository.save(updated)
-        if (backendStatus.value.activeTunnels.containsKey(tunnel.id)) {
-            stopTunnel(tunnel.id)
+        if (backendStatus.value.activeTunnels.containsKey(updated.id)) {
+            stopTunnel(updated.id)
             startTunnel(updated)
         }
     }

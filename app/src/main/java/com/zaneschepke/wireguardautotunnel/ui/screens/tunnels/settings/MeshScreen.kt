@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.NetworkCheck
 import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material.icons.outlined.Route
@@ -69,9 +70,9 @@ fun MeshScreen(viewModel: TunnelViewModel) {
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
     ) {
         if (dir == null) DescriptionText(stringResource(R.string.mesh_waiting), Modifier.padding(horizontal = 16.dp))
+        val navController = LocalNavController.current
         // Phase 38: only for clients the hub marks admin (directory self.admin)
         if (dir?.selfAdmin == true) {
-            val navController = LocalNavController.current
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.AdminPanelSettings, contentDescription = null) },
                 title = stringResource(R.string.admin_title),
@@ -79,6 +80,12 @@ fun MeshScreen(viewModel: TunnelViewModel) {
                 onClick = { navController.push(Route.MeshAdmin(tunnel.id)) },
             )
         }
+        SurfaceRow(
+            leading = { Icon(Icons.Outlined.Map, contentDescription = null) },
+            title = stringResource(R.string.map_title),
+            description = { DescriptionText(stringResource(R.string.map_desc)) },
+            onClick = { navController.push(Route.MeshMap(tunnel.id)) },
+        )
         dir?.services?.takeIf { it.isNotEmpty() }?.let { services ->
             Column {
                 GroupLabel(stringResource(R.string.mesh_services), modifier = Modifier.padding(horizontal = 16.dp))
@@ -113,6 +120,8 @@ fun MeshScreen(viewModel: TunnelViewModel) {
         Column {
             GroupLabel(stringResource(R.string.mesh_speed_test), modifier = Modifier.padding(horizontal = 16.dp))
             var result by remember { mutableStateOf<String?>(null) }
+            var warpMbps by remember { mutableStateOf<Double?>(null) }
+            WarpGauge(warpMbps)
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.NetworkCheck, contentDescription = null) },
                 title = stringResource(R.string.mesh_speed_run),
@@ -122,7 +131,7 @@ fun MeshScreen(viewModel: TunnelViewModel) {
                     scope.launch {
                         result = withContext(Dispatchers.IO) {
                             runCatching {
-                                val down = MeshDirectory.speed(hub, up = false)
+                                val down = MeshDirectory.speed(hub, up = false).also { warpMbps = it }
                                 val up = MeshDirectory.speed(hub, up = true)
                                 context.getString(R.string.mesh_speed_result, down, up)
                             }.getOrElse {

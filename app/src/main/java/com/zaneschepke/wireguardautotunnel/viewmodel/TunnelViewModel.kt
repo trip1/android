@@ -122,6 +122,10 @@ class TunnelViewModel(
         tunnelCoordinator.setExitNode(state.tunnel ?: return@intent, to)
     }
 
+    fun onCloak(to: Boolean) = intent {
+        tunnelCoordinator.setCloaked(state.tunnel ?: return@intent, to)
+    }
+
     fun onIPv6Action(iPv6Intent: IPv6Intent) = intent {
         val tunnel = state.tunnel ?: return@intent
 

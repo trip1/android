@@ -649,6 +649,20 @@ fun currentRouteAsNavbarState(
                         showBottomItems = true,
                     )
                 }
+                is Route.MeshMap -> {
+                    NavbarState(
+                        topLeading = { TvBackButton { navController.pop() } },
+                        topTitle = context.getString(R.string.map_title),
+                        showBottomItems = true,
+                    )
+                }
+                Route.TravelLog -> {
+                    NavbarState(
+                        topLeading = { TvBackButton { navController.pop() } },
+                        topTitle = context.getString(R.string.travel_title),
+                        showBottomItems = true,
+                    )
+                }
                 is MeshAdmin -> {
                     NavbarState(
                         topLeading = { TvBackButton { navController.pop() } },

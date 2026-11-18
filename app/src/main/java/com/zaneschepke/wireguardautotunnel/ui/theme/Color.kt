@@ -18,6 +18,12 @@ val LcarsPeriwinkle = Color(0xFFCC99CC)
 val LcarsCrimson = Color(0xFFFF5555)
 val LcarsWarpTeal = Color(0xFF33DDFF)
 
+// Starship theme: original palette (inspired by classic sci-fi bridge panels)
+val StarshipOrange = Color(0xFFFF9944)
+val StarshipLilac = Color(0xFFCC99FF)
+val StarshipBlue = Color(0xFF7799FF)
+val StarshipPanel = Color(0xFF14101E)
+
 // amoled
 val ElectricTeal = Color(0xFFFF9C00)
 

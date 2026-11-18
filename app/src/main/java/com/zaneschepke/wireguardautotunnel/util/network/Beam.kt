@@ -156,6 +156,7 @@ class BeamReceiver(
         val saved = runCatching { save(name, length, input) }.onFailure { Timber.e(it, "Beam save failed") }.getOrDefault(false)
         if (!saved) return reply(out, 400)
         reply(out, 201)
+        com.zaneschepke.wireguardautotunnel.util.UiSounds.chirp()
         val peer = socket.inetAddress.hostAddress.orEmpty()
         notificationService.show(
             BEAM_NOTIFICATION_BASE_ID + (name.hashCode() and 0xffff),

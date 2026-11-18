@@ -810,4 +810,38 @@
     <string name="widget_turn_off">Turn off</string>
     <string name="socks5" translatable="false">SOCKS5</string>
     <string name="http" translatable="false">HTTP</string>
+    <string name="theme_starship">Starship</string>
+    <string name="starship">Starship</string>
+    <string name="ui_sounds">UI sounds</string>
+    <string name="ui_sounds_desc">Engage/disengage tones when a tunnel goes up or down and a chirp when a Beam arrives (synthesized, off by default)</string>
+    <string name="cloak_title">Cloaking device</string>
+    <string name="cloak_desc">Always use the HTTPS relay through the hub: traffic looks like ordinary HTTPS (slower than UDP)</string>
+    <string name="cloak_nebula">Not available for Nebula</string>
+    <string name="map_title">Live mesh map</string>
+    <string name="map_desc">Hubs, lighthouses and peers with direct / relayed lines</string>
+    <string name="map_this_device">this device</string>
+    <string name="map_legend">Solid line = direct · dashed = relayed through the hub it ends at · grey = offline · a moving dot = traffic since the last poll (Settings → Monitoring sets the poll interval)</string>
+    <string name="travel_title">Travel log</string>
+    <string name="travel_desc">Your tunnel sessions, totals and achievements, stored only on this device</string>
+    <string name="travel_totals">Totals</string>
+    <string name="travel_totals_line">%1$s moved · %2$.1f h connected · %3$d countries · %4$d-day streak</string>
+    <string name="travel_no_country">No country recorded</string>
+    <string name="travel_achievements">Achievements</string>
+    <string name="travel_achievement_names">First jump|First relayed connection|10 GB moved|3 countries|7-day streak</string>
+    <string name="travel_unlocked">Unlocked</string>
+    <string name="travel_locked">Locked</string>
+    <string name="travel_sessions">Sessions</string>
+    <string name="travel_empty">No sessions yet: connect a tunnel</string>
+    <string name="travel_relayed">relayed</string>
+    <string name="travel_clear">Clear log</string>
+    <string name="travel_clear_confirm">Delete every travel log entry on this device?</string>
+    <string name="travel_private">Nothing here leaves the device. Wi-Fi names are recorded only if location permission was already granted; the country comes from the mobile network (offline).</string>
+    <string name="party_title">LAN party</string>
+    <string name="party_start">Start party</string>
+    <string name="party_end">End party (revoke guests)</string>
+    <string name="party_go">Start</string>
+    <string name="party_word">Party word</string>
+    <string name="party_count">Guests (1-%1$d)</string>
+    <string name="party_left">%1$d guests could not be revoked yet: tap End party again</string>
+    <string name="party_help">Creates Nebula guests (party-&lt;word&gt;-N) with no LAN or internet exit that expire on their own. Guests reach each other and you over the mesh (no firewall rules are added). Works: games where you type the host\'s mesh IP (or name.mesh) and dedicated servers. Doesn\'t work: games that only find each other by LAN broadcast or multicast, because the mesh carries routed IP between devices, not a shared LAN segment.</string>
 </resources>

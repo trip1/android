@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.Hub
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.TravelExplore
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -126,6 +127,23 @@ fun TunnelSettingsScreen(
         )
     }
 
+    // cloaking device = the endpoint ladder's wss:// relay rung; Nebula has no ladder
+    val cloakRow: @Composable () -> Unit = {
+        val step = remember(tunnel.quickConfig) { if (tunnel.isNebula) null else tunnel.cloakStep() }
+        if (tunnel.isNebula || step != null) {
+            SurfaceRow(
+                leading = { Icon(Icons.Outlined.VisibilityOff, contentDescription = null) },
+                title = stringResource(R.string.cloak_title),
+                enabled = step != null,
+                description = {
+                    DescriptionText(stringResource(if (step == null) R.string.cloak_nebula else R.string.cloak_desc), disabled = step == null)
+                },
+                trailing = { ThemedSwitch(tunnel.isCloaked && step != null, onClick = { viewModel.onCloak(it) }, enabled = step != null) },
+                onClick = { if (step != null) viewModel.onCloak(!tunnel.isCloaked) },
+            )
+        }
+    }
+
     Column(
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.Top),
@@ -143,6 +161,7 @@ fun TunnelSettingsScreen(
             primaryRow()
             splitRow()
             meshRow()
+            cloakRow()
             uiState.activeConfig?.let { active ->
                 Column {
                     GroupLabel(stringResource(R.string.mesh_sensor_array), modifier = Modifier.padding(horizontal = 16.dp))
@@ -216,6 +235,7 @@ fun TunnelSettingsScreen(
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
             splitRow()
+            cloakRow()
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.TravelExplore, contentDescription = null) },
                 title = stringResource(R.string.full_warp),

@@ -23,6 +23,7 @@ fun Entity.toDomain(): Domain =
         entryTunnelId = entryTunnelId,
         isExitNode = isExitNode,
         nebulaProfile = nebulaProfile,
+        isCloaked = isCloaked,
     )
 
 fun Domain.toEntity(): Entity =
@@ -45,4 +46,5 @@ fun Domain.toEntity(): Entity =
         entryTunnelId = entryTunnelId,
         isExitNode = isExitNode,
         nebulaProfile = nebulaProfile,
+        isCloaked = isCloaked,
     )

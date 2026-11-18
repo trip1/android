@@ -66,6 +66,10 @@ sealed class Route : NavKey {
 
     @Keep @Serializable data class Mesh(val id: Int) : Route()
 
+    @Keep @Serializable data class MeshMap(val id: Int) : Route()
+
+    @Keep @Serializable data object TravelLog : Route()
+
     /** Phase 38 mesh admin: shows join codes, so FLAG_SECURE like the config screen. */
     @Keep
     @Serializable
@@ -203,6 +207,7 @@ enum class Tab(
                 is Route.EntryTunnel,
                 is Route.Mesh,
                 is Route.MeshAdmin,
+                is Route.MeshMap,
                 is Route.SplitTunnel -> TUNNELS
                 is Route.AutoTunnel,
                 Route.WifiDetectionMethod,
@@ -219,6 +224,7 @@ enum class Tab(
                 Route.Language,
                 Route.Display,
                 Route.Notifications,
+                Route.TravelLog,
                 is Route.ConfigGlobal,
                 Route.TunnelGlobals,
                 Route.Security,
