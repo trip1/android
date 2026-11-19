@@ -435,6 +435,7 @@ private fun ListRow(
                 remember(uiState.selectedTunnels) {
                     uiState.selectedTunnels.any { it.id == tunnel.id }
                 }
+            val expiry = remember(tunnel.quickConfig) { MeshEnroll.expiresInDays(tunnel.quickConfig) }
             SurfaceRow(
                 modifier =
                     modifier
@@ -452,7 +453,7 @@ private fun ListRow(
                     )
                 },
                 title = tunnel.name,
-                description = tunnelRowDescription(tunnel, uiState, route),
+                description = tunnelRowDescription(tunnel, uiState, route, expiry),
                 onClick = {
                     when {
                         uiState.isReorderMode -> Unit
@@ -506,11 +507,11 @@ private fun tunnelRowDescription(
     tunnel: TunnelConfig,
     uiState: TunnelsUiState,
     route: String?,
+    expiry: Long?,
 ): (@Composable () -> Unit)? {
     val entryName =
         tunnel.entryTunnelId?.let { id -> uiState.tunnels.firstOrNull { it.id == id }?.name }
     val latency = uiState.pingLatencies[tunnel.id]
-    val expiry = MeshEnroll.expiresInDays(tunnel.quickConfig)
     if (entryName == null && latency == null && route == null && expiry == null) return null
     return {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {

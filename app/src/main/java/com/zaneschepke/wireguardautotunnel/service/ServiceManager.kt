@@ -7,6 +7,7 @@ import chat.warpsignal.nebmobile.Nebmobile
 import com.zaneschepke.wireguardautotunnel.util.network.Nebula
 import com.zaneschepke.wireguardautotunnel.service.autotunnel.AutoTunnelService
 import com.zaneschepke.wireguardautotunnel.util.permission.NotificationPermissionHelper
+import kotlinx.coroutines.withContext
 
 class ServiceManager(private val context: Context) {
 
@@ -21,10 +22,10 @@ class ServiceManager(private val context: Context) {
     suspend fun startNebula(id: Int, name: String, profileJson: String, yaml: String, included: List<String>, excluded: List<String>) =
         NebulaVpnService.start(context, id, name, profileJson, yaml, included, excluded)
 
-    fun stopNebula() = NebulaVpnService.stop(context)
+    suspend fun stopNebula() = NebulaVpnService.stop(context)
 
-    fun rebindNebula() {
-        if (NebulaVpnService.active.value != null) Nebula.call { Nebmobile.rebind() }
+    suspend fun rebindNebula() {
+        if (NebulaVpnService.active.value != null) withContext(Nebula.dispatcher) { Nebmobile.rebind() }
     }
 
     fun hasVpnPermission(): Boolean {

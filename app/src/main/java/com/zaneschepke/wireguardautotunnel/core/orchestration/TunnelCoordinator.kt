@@ -131,19 +131,32 @@ class TunnelCoordinator(
             initialValue = null,
         )
 
+    private val _nebulaStatusJson = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+    /** Latest raw Nebmobile.status() JSON shared with UI screens so they don't run a second poll loop. */
+    val nebulaStatusJson: StateFlow<String?> = _nebulaStatusJson
+
     /** Nebula Status() as an ActiveConfig, polled at the monitoring interval while a Nebula tunnel runs. */
     private val nebulaStats: Flow<ActiveConfig?> =
         combine(NebulaVpnService.active, runtimeSettingsSnapshotState) { neb, snap -> neb to snap?.monitoring }
             .flatMapLatest { (neb, mon) ->
                 flow {
                     emit(null)
-                    if (neb == null || mon?.tunnelStatisticsEnabled != true) return@flow
+                    if (neb == null) {
+                        _nebulaStatusJson.value = null
+                        return@flow
+                    }
                     val ip = tunnelRepository.getById(neb.first)?.takeIf { it.isNebula }
                         ?.let { Nebula.parse(it.nebulaProfile).addresses } ?: return@flow
+                    val pollSec = (mon?.tunnelStatisticsPollInterval ?: 3).coerceAtLeast(1)
                     while (true) {
                         val st = withContext(Nebula.dispatcher) { runCatching { Nebmobile.status() }.getOrNull() }
-                        emit(st?.let { runCatching { Nebula.activeConfig(it, ip, System.currentTimeMillis() / 1000) }.getOrNull() })
-                        delay(mon.tunnelStatisticsPollInterval.coerceAtLeast(1).seconds)
+                        _nebulaStatusJson.value = st
+                        emit(
+                            if (mon?.tunnelStatisticsEnabled == true)
+                                st?.let { runCatching { Nebula.activeConfig(it, ip, System.currentTimeMillis() / 1000) }.getOrNull() }
+                            else null
+                        )
+                        delay(if (mon?.tunnelStatisticsEnabled == true) pollSec.seconds else 3.seconds)
                     }
                 }.flowOn(Dispatchers.IO)
             }
@@ -631,11 +644,6 @@ class TunnelCoordinator(
             val active = activeIds()
             if (active.isNotEmpty()) {
                 lastActiveTunnels = active.toList()
-
-                active.forEach { id ->
-                    _actions.emit(TunnelActionEvent.Stopped(tunnelId = id, source = source))
-                }
-
                 stopActiveTunnelsInternal(source, persistLastActive = true)
                 return@withLock
             }

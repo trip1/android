@@ -13,6 +13,7 @@ import com.zaneschepke.wireguardautotunnel.ui.state.TunnelUiState
 import com.zaneschepke.wireguardautotunnel.ui.state.splitAppListSummary
 import com.zaneschepke.wireguardautotunnel.util.network.Nebula
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
@@ -29,21 +30,28 @@ class TunnelViewModel(
             TunnelUiState(),
             buildSettings = { repeatOnSubscribedStopTimeout = 5000L },
         ) {
-            combine(
+            // compute appliedSplit only when tunnel/global/settings change, not on every 1-3 s stats tick
+            val configFlow =
+                combine(
                     tunnelRepository.userTunnelsFlow,
                     tunnelRepository.globalTunnelFlow,
                     settingsRepository.flow,
+                ) { tunnels, global, settings ->
+                    val tunnel = tunnels.firstOrNull { tun -> tun.id == tunnelId }
+                    Triple(tunnels, tunnel, appliedSplit(tunnel, global, settings))
+                }.distinctUntilChanged()
+            combine(
+                    configFlow,
                     tunnelCoordinator.backendStatus.map { it.activeTunnels[tunnelId] },
-                ) { tunnels, global, settings, active ->
-                    TunnelSplitSnapshot(tunnels, global, settings, active)
+                ) { (tunnels, tunnel, split), active ->
+                    TunnelSplitSnapshot(tunnels, tunnel, split, active)
                 }
                 .collect { snapshot ->
                     reduce {
-                        val tunnel = snapshot.tunnels.firstOrNull { tun -> tun.id == tunnelId }
                         state.copy(
-                            tunnel = tunnel,
+                            tunnel = snapshot.tunnel,
                             userTunnels = snapshot.tunnels,
-                            appliedSplit = appliedSplit(tunnel, snapshot.global, snapshot.settings),
+                            appliedSplit = snapshot.appliedSplit,
                             activeConfig = snapshot.active?.activeConfig,
                             isRunning = snapshot.active != null,
                             lastStatsAtMs = snapshot.active?.lastStatsAtMs ?: 0L,
@@ -73,8 +81,8 @@ class TunnelViewModel(
 
     private data class TunnelSplitSnapshot(
         val tunnels: List<TunnelConfig>,
-        val global: TunnelConfig?,
-        val settings: GeneralSettings,
+        val tunnel: TunnelConfig?,
+        val appliedSplit: AppliedSplitApps?,
         val active: ActiveTunnel?,
     )
 

@@ -24,30 +24,34 @@ class NotificationActionReceiver : BroadcastReceiver(), KoinComponent {
     private val applicationScope: CoroutineScope = get(named(Scope.APPLICATION))
 
     override fun onReceive(context: Context, intent: Intent) {
-
+        val pending = goAsync()
         applicationScope.launch {
-            when (intent.action) {
-                NotificationAction.AUTO_TUNNEL_OFF.name -> {
-                    autoTunnelCoordinator.disable()
-                }
-
-                NotificationAction.TUNNEL_OFF.name -> {
-
-                    val tunnelId =
-                        intent.getIntExtra(NotificationService.EXTRA_ID, STOP_ALL_TUNNELS_ID)
-
-                    if (tunnelId == STOP_ALL_TUNNELS_ID) {
-                        tunnelCoordinator.stopActiveTunnels()
-                        return@launch
+            try {
+                when (intent.action) {
+                    NotificationAction.AUTO_TUNNEL_OFF.name -> {
+                        autoTunnelCoordinator.disable()
                     }
-                    tunnelCoordinator.stopTunnel(tunnelId)
-                }
 
-                NotificationAction.TOGGLE.name -> tunnelCoordinator.toggleActiveTunnels()
+                    NotificationAction.TUNNEL_OFF.name -> {
 
-                NotificationAction.STOP_ALL.name -> {
-                    tunnelCoordinator.stopActiveTunnels()
+                        val tunnelId =
+                            intent.getIntExtra(NotificationService.EXTRA_ID, STOP_ALL_TUNNELS_ID)
+
+                        if (tunnelId == STOP_ALL_TUNNELS_ID) {
+                            tunnelCoordinator.stopActiveTunnels()
+                            return@launch
+                        }
+                        tunnelCoordinator.stopTunnel(tunnelId)
+                    }
+
+                    NotificationAction.TOGGLE.name -> tunnelCoordinator.toggleActiveTunnels()
+
+                    NotificationAction.STOP_ALL.name -> {
+                        tunnelCoordinator.stopActiveTunnels()
+                    }
                 }
+            } finally {
+                pending.finish()
             }
         }
     }

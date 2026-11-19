@@ -14,9 +14,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -24,24 +24,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import chat.warpsignal.nebmobile.Nebmobile
 import com.zaneschepke.wireguardautotunnel.R
+import com.zaneschepke.wireguardautotunnel.core.orchestration.TunnelCoordinator
 import com.zaneschepke.wireguardautotunnel.ui.common.button.SurfaceRow
 import com.zaneschepke.wireguardautotunnel.ui.common.label.GroupLabel
 import com.zaneschepke.wireguardautotunnel.ui.common.text.DescriptionText
 import com.zaneschepke.wireguardautotunnel.ui.common.textbox.ConfigurationTextBox
 import com.zaneschepke.wireguardautotunnel.ui.theme.LcarsCrimson
 import com.zaneschepke.wireguardautotunnel.util.network.Nebula
-import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.koin.compose.koinInject
 
 /** Nebula tunnel settings: status (when running), role picker, listen port, read-only lighthouse list. */
 @Composable
@@ -53,15 +49,9 @@ fun NebulaSettings(
 ) {
     val p = remember(profileJson) { Nebula.parse(profileJson) }
     if (isRunning) {
-        val status by
-            produceState<JsonObject?>(null, profileJson) {
-                while (true) {
-                    value = withContext(Nebula.dispatcher) {
-                        runCatching { Json.parseToJsonElement(Nebmobile.status()).jsonObject }.getOrNull()
-                    }
-                    delay(3.seconds)
-                }
-            }
+        val coordinator: TunnelCoordinator = koinInject()
+        val rawStatus by coordinator.nebulaStatusJson.collectAsState()
+        val status = remember(rawStatus) { rawStatus?.let { runCatching { Json.parseToJsonElement(it).jsonObject }.getOrNull() } }
         Column {
             GroupLabel(stringResource(R.string.nebula_status), modifier = Modifier.padding(horizontal = 16.dp))
             val s = status

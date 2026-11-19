@@ -44,6 +44,7 @@ class WsBridge(private val url: String, private val underlay: () -> Network?) : 
             val buf = ByteArray(65535)
             val p = DatagramPacket(buf, buf.size)
             while (!closed) {
+                p.length = buf.size
                 runCatching { udp.receive(p) }.onFailure { return@thread }
                 wgAddress = p.socketAddress
                 // OkHttp queues sends made before the socket opens, so the first handshake isn't lost
@@ -60,6 +61,8 @@ class WsBridge(private val url: String, private val underlay: () -> Network?) : 
             BASE.newBuilder()
                 .apply {
                     if (net != null) {
+                        // fresh pool when bound to a specific underlay so sockets from an old Network aren't reused
+                        connectionPool(okhttp3.ConnectionPool(2, 1, TimeUnit.MINUTES))
                         socketFactory(net.socketFactory)
                         dns { host -> net.getAllByName(host).toList() }
                     }
@@ -69,14 +72,24 @@ class WsBridge(private val url: String, private val underlay: () -> Network?) : 
     }
 
     private inner class Listener : WebSocketListener() {
+        private val sendBuf = ByteArray(65535)
+        private val sendPkt = DatagramPacket(sendBuf, sendBuf.size)
+
         override fun onOpen(webSocket: WebSocket, response: Response) {
             attempt = 0
             Timber.i("WsBridge :$port connected to $url")
         }
 
         override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
+            if (closed) return
             val to = wgAddress ?: return
-            runCatching { udp.send(DatagramPacket(bytes.toByteArray(), bytes.size, to)) }
+            val n = bytes.size
+            if (n > sendBuf.size) return
+            // OkHttp invokes Listener callbacks serially on one reader thread, so reusing sendPkt is race-free
+            for (i in 0 until n) sendBuf[i] = bytes[i]
+            sendPkt.setData(sendBuf, 0, n)
+            sendPkt.socketAddress = to
+            runCatching { udp.send(sendPkt) }
         }
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {

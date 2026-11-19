@@ -113,8 +113,10 @@ class TravelLog(
                 } else {
                     // ponytail: counters that reset mid-session (backend recovery) keep the larger value, not the sum
                     // restored at process start before connectivity is known: fill the network in once it is
-                    if (o.row.network == "Offline") start(now, o.row.tunnelName).let { f ->
-                        o.row = o.row.copy(network = f.network, ssid = f.ssid, country = f.country ?: o.row.country)
+                    if (o.row.network == "Offline" && networkMonitor.connectivityStateFlow.value?.activeNetwork != null) {
+                        start(now, o.row.tunnelName).let { f ->
+                            o.row = o.row.copy(network = f.network, ssid = f.ssid, country = f.country ?: o.row.country)
+                        }
                     }
                     o.row = o.row.copy(endMs = now, rxBytes = maxOf(o.row.rxBytes, rx), txBytes = maxOf(o.row.txBytes, tx),
                         relayed = o.row.relayed || relayed)

@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -120,20 +122,28 @@ fun MeshMapScreen(viewModel: TunnelViewModel) {
     val fg = MaterialTheme.colorScheme.onSurface
     val off = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
     val measurer = rememberTextMeasurer()
-    val pulse by rememberInfiniteTransition(label = "pulse").animateFloat(
-        0f, 1f, infiniteRepeatable(tween(1200, easing = LinearEasing), RepeatMode.Restart), label = "pulse")
     val selfName = stringResource(R.string.map_this_device)
+    val all = remember(selfName, ring) { listOf(MapNode(selfName, true, false, null, null)) + ring }
+    // pre-measure node labels outside Canvas so animation frames don't re-layout text 60-120x/s
+    val allNodes = remember(hubNodes, all) { hubNodes + all }
+    val labels = remember(allNodes, fg, off) {
+        allNodes.map { n -> measurer.measure(n.name, TextStyle(color = if (n.online) fg else off, fontSize = 11.sp)) }
+    }
+    val pos = remember(hubNodes.size, all.size) { MeshMapLayout.positions(hubNodes.size, all.size) }
+    val dash = remember { PathEffect.dashPathEffect(floatArrayOf(14f, 10f)) }
+    val pulse = if (moving.isNotEmpty()) {
+        rememberInfiniteTransition(label = "pulse").animateFloat(
+            0f, 1f, infiniteRepeatable(tween(1200, easing = LinearEasing), RepeatMode.Restart), label = "pulse"
+        ).value
+    } else 0f
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (dir == null) DescriptionText(stringResource(R.string.mesh_waiting), Modifier.padding(horizontal = 16.dp))
         Canvas(Modifier.fillMaxWidth().aspectRatio(1f).padding(16.dp)) {
-            val all = listOf(MapNode(selfName, true, false, null, null)) + ring
-            val pos = MeshMapLayout.positions(hubNodes.size, all.size)
             val r = size.minDimension / 2
             fun at(i: Int) = pos[i].let { (x, y) -> Offset(center.x + x * r * 0.85f, center.y + y * r * 0.85f) }
             val hubAt = hubNodes.indices.associate { hubNodes[it].name to at(it) }
             val selfAt = at(hubNodes.size)
-            val dash = PathEffect.dashPathEffect(floatArrayOf(14f, 10f))
             fun line(a: Offset, b: Offset, color: Color, dashed: Boolean, active: Boolean) {
                 drawLine(color, a, b, strokeWidth = 4f, pathEffect = if (dashed) dash else null, cap = StrokeCap.Round)
                 if (active) drawCircle(color, 9f, a + (b - a) * pulse)
@@ -149,10 +159,11 @@ fun MeshMapScreen(viewModel: TunnelViewModel) {
                     else -> line(hubAt[n.via] ?: hubAt.values.first(), p, secondary, true, n.trafficKey in moving)
                 }
             }
-            (hubNodes.mapIndexed { i, n -> n to at(i) } + all.mapIndexed { i, n -> n to at(hubNodes.size + i) }).forEach { (n, p) ->
+            allNodes.forEachIndexed { i, n ->
+                val p = at(i)
                 val c = when { !n.online -> off; n.hub -> secondary; n.name == selfName -> primary; else -> fg }
                 drawCircle(c, if (n.hub) 22f else 15f, p)
-                val t = measurer.measure(n.name, TextStyle(color = if (n.online) fg else off, fontSize = 11.sp))
+                val t = labels[i]
                 drawText(t, topLeft = Offset(p.x - t.size.width / 2, p.y + 20f))
             }
         }
@@ -192,46 +203,56 @@ fun TravelLogScreen(dao: TravelSessionDao = koinInject()) {
     val stats = remember(sessions) { Travel.stats(sessions) }
     val scope = rememberCoroutineScope()
     var confirm by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Column {
-            GroupLabel(stringResource(R.string.travel_totals), modifier = Modifier.padding(horizontal = 16.dp))
-            SurfaceRow(title = stringResource(R.string.travel_totals_line, Formatter.formatFileSize(context, stats.bytes),
-                stats.hours, stats.countries.size, stats.longestStreakDays),
-                description = { DescriptionText(stats.countries.sorted().joinToString(" ").ifEmpty { stringResource(R.string.travel_no_country) }) })
-        }
-        Column {
-            GroupLabel(stringResource(R.string.travel_achievements), modifier = Modifier.padding(horizontal = 16.dp))
-            val labels = stringResource(R.string.travel_achievement_names).split('|')
-            Travel.Achievement.entries.forEachIndexed { i, a ->
-                val on = a.unlocked(stats)
-                SurfaceRow(
-                    leading = { Icon(if (on) Icons.Outlined.EmojiEvents else Icons.Outlined.Lock, contentDescription = null,
-                        tint = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline) },
-                    title = labels.getOrElse(i) { a.name },
-                    description = { DescriptionText(stringResource(if (on) R.string.travel_unlocked else R.string.travel_locked), disabled = !on) },
-                )
+    val labels = stringResource(R.string.travel_achievement_names).split('|')
+    LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item(key = "totals") {
+            Column {
+                GroupLabel(stringResource(R.string.travel_totals), modifier = Modifier.padding(horizontal = 16.dp))
+                SurfaceRow(title = stringResource(R.string.travel_totals_line, Formatter.formatFileSize(context, stats.bytes),
+                    stats.hours, stats.countries.size, stats.longestStreakDays),
+                    description = { DescriptionText(stats.countries.sorted().joinToString(" ").ifEmpty { stringResource(R.string.travel_no_country) }) })
             }
         }
-        Column {
-            GroupLabel(stringResource(R.string.travel_sessions), modifier = Modifier.padding(horizontal = 16.dp))
-            if (sessions.isEmpty()) DescriptionText(stringResource(R.string.travel_empty), Modifier.padding(horizontal = 16.dp))
-            sessions.forEach { s ->
-                SurfaceRow(
-                    title = "${s.tunnelName} · ${DateUtils.formatDateTime(context, s.startMs, DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_TIME)}",
-                    description = {
-                        DescriptionText(listOfNotNull(
-                            DateUtils.formatElapsedTime((s.endMs - s.startMs).coerceAtLeast(0) / 1000), s.network, s.ssid, s.country,
-                            "↓" + Formatter.formatFileSize(context, s.rxBytes) + " ↑" + Formatter.formatFileSize(context, s.txBytes),
-                            stringResource(R.string.travel_relayed).takeIf { s.relayed },
-                        ).joinToString(" · "))
-                    },
-                )
+        item(key = "achievements") {
+            Column {
+                GroupLabel(stringResource(R.string.travel_achievements), modifier = Modifier.padding(horizontal = 16.dp))
+                Travel.Achievement.entries.forEachIndexed { i, a ->
+                    val on = a.unlocked(stats)
+                    SurfaceRow(
+                        leading = { Icon(if (on) Icons.Outlined.EmojiEvents else Icons.Outlined.Lock, contentDescription = null,
+                            tint = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline) },
+                        title = labels.getOrElse(i) { a.name },
+                        description = { DescriptionText(stringResource(if (on) R.string.travel_unlocked else R.string.travel_locked), disabled = !on) },
+                    )
+                }
             }
-            SurfaceRow(leading = { Icon(Icons.Outlined.DeleteSweep, contentDescription = null) },
-                title = stringResource(R.string.travel_clear), onClick = { confirm = true })
         }
-        Text(stringResource(R.string.travel_private), Modifier.padding(horizontal = 16.dp), style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.outline)
+        item(key = "sessions_header") {
+            Column {
+                GroupLabel(stringResource(R.string.travel_sessions), modifier = Modifier.padding(horizontal = 16.dp))
+                if (sessions.isEmpty()) DescriptionText(stringResource(R.string.travel_empty), Modifier.padding(horizontal = 16.dp))
+            }
+        }
+        items(sessions, key = { it.id }) { s ->
+            SurfaceRow(
+                title = "${s.tunnelName} · ${DateUtils.formatDateTime(context, s.startMs, DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_TIME)}",
+                description = {
+                    DescriptionText(listOfNotNull(
+                        DateUtils.formatElapsedTime((s.endMs - s.startMs).coerceAtLeast(0) / 1000), s.network, s.ssid, s.country,
+                        "↓" + Formatter.formatFileSize(context, s.rxBytes) + " ↑" + Formatter.formatFileSize(context, s.txBytes),
+                        stringResource(R.string.travel_relayed).takeIf { s.relayed },
+                    ).joinToString(" · "))
+                },
+            )
+        }
+        item(key = "footer") {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SurfaceRow(leading = { Icon(Icons.Outlined.DeleteSweep, contentDescription = null) },
+                    title = stringResource(R.string.travel_clear), onClick = { confirm = true })
+                Text(stringResource(R.string.travel_private), Modifier.padding(horizontal = 16.dp), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline)
+            }
+        }
     }
     if (confirm) InfoDialog(onAttest = { confirm = false; scope.launch { dao.clear() } }, onDismiss = { confirm = false },
         title = stringResource(R.string.travel_clear), body = { Text(stringResource(R.string.travel_clear_confirm)) },

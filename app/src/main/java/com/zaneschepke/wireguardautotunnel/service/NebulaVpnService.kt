@@ -13,8 +13,16 @@ import com.zaneschepke.wireguardautotunnel.notification.NotificationService
 import com.zaneschepke.wireguardautotunnel.util.Constants
 import com.zaneschepke.wireguardautotunnel.util.network.Nebula
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.koin.android.ext.android.inject
 import timber.log.Timber
@@ -22,16 +30,25 @@ import timber.log.Timber
 /** Nebula's own VpnService (the WireGuard backend's VpnService isn't reusable). Driven by TunnelCoordinator. */
 class NebulaVpnService : VpnService() {
     private val notificationService: NotificationService by inject()
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val opMutex = Mutex()
     private var tun: ParcelFileDescriptor? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action != ACTION_START) {
-            // a start queued right behind this stop (Nebula restart) keeps the service alive
-            shutdown(startId)
+            val done = pendingStop
+            serviceScope.launch {
+                opMutex.withLock { shutdownLocked(startId) }
+                done?.complete(Unit)
+            }
             return START_NOT_STICKY
         }
         val id = intent.getIntExtra(EXTRA_ID, 0)
         val name = intent.getStringExtra(EXTRA_NAME).orEmpty()
+        val profileJson = intent.getStringExtra(EXTRA_PROFILE)
+        val yaml = intent.getStringExtra(EXTRA_YAML)
+        val included = intent.getStringArrayListExtra(EXTRA_INCLUDED).orEmpty().filter { it != packageName }
+        val excluded = intent.getStringArrayListExtra(EXTRA_EXCLUDED).orEmpty().filter { it != packageName }
         ServiceCompat.startForeground(
             this,
             NotificationService.NEBULA_NOTIFICATION_ID,
@@ -43,68 +60,82 @@ class NebulaVpnService : VpnService() {
             ),
             Constants.SPECIAL_USE_SERVICE_TYPE_ID,
         )
-        // ponytail: Nebula starts on the main thread (no DNS in our configs, ~ms); move off it if starts get slow
-        val result = runCatching {
-            val p = Nebula.parse(intent.getStringExtra(EXTRA_PROFILE)!!)
-            Nebula.call { Nebmobile.stop() }
-            tun?.close()
-            tun = null
-            val (addr, bits) = p.ip.split('/')
-            val builder =
-                Builder()
-                    .setSession(name)
-                    .setMtu(Nebula.MTU)
-                    .addAddress(addr, bits.toInt())
-            // the app itself uses the tunnel (directory, Beam, renew); only Nebula's own UDP socket is protect()ed in
-            // Nebmobile.start, or the LAN lighthouse endpoint inside a routed CIDR would loop
-            p.network.split('/').let { (a, b) -> builder.addRoute(a, b.toInt()) }
-            // v2 cert: overlay v6 address + its /64 (Phase 33)
-            if (p.ip6.isNotBlank()) p.ip6.split('/').let { (a, b) -> builder.addAddress(a, b.toInt()) }
-            p.network6?.split('/')?.let { (a, b) -> builder.addRoute(a, b.toInt()) }
-            if (p.isClient) {
-                p.routes.forEach { r -> r.cidr.split('/').let { (a, b) -> builder.addRoute(a, b.toInt()) } }
-                // exit: like WireGuard's ::/0, IPv6 goes into the tunnel and dies there (the hub has no v6) instead of leaking
-                if (p.routes.any { it.cidr == Nebula.DEFAULT_ROUTE }) builder.addRoute("::", 0)
-                if (p.dns.isNotBlank()) builder.addDnsServer(p.dns)
+        val done = pendingStart
+        serviceScope.launch {
+            val result = opMutex.withLock {
+                runCatching {
+                    val p = Nebula.parse(profileJson!!)
+                    withContext(Nebula.dispatcher) { Nebmobile.stop() }
+                    tun?.close()
+                    tun = null
+                    val (addr, bits) = p.ip.split('/')
+                    val builder =
+                        Builder()
+                            .setSession(name)
+                            .setMtu(Nebula.MTU)
+                            .addAddress(addr, bits.toInt())
+                    // the app itself uses the tunnel (directory, Beam, renew); only Nebula's own UDP socket is protect()ed in
+                    // Nebmobile.start, or the LAN lighthouse endpoint inside a routed CIDR would loop
+                    p.network.split('/').let { (a, b) -> builder.addRoute(a, b.toInt()) }
+                    // v2 cert: overlay v6 address + its /64 (Phase 33)
+                    if (p.ip6.isNotBlank()) p.ip6.split('/').let { (a, b) -> builder.addAddress(a, b.toInt()) }
+                    p.network6?.split('/')?.let { (a, b) -> builder.addRoute(a, b.toInt()) }
+                    if (p.isClient) {
+                        p.routes.forEach { r -> r.cidr.split('/').let { (a, b) -> builder.addRoute(a, b.toInt()) } }
+                        // exit: like WireGuard's ::/0, IPv6 goes into the tunnel and dies there (the hub has no v6) instead of leaking
+                        if (p.routes.any { it.cidr == Nebula.DEFAULT_ROUTE }) builder.addRoute("::", 0)
+                        if (p.dns.isNotBlank()) builder.addDnsServer(p.dns)
+                    }
+                    // split tunneling (same lists as WireGuard). The app stays inside its own VPN either way: directory, Beam
+                    // and renew go over Nebula, and Nebula's own UDP socket is protect()ed
+                    if (included.isNotEmpty()) (included + packageName).forEach { runCatching { builder.addAllowedApplication(it) } }
+                    else excluded.forEach { runCatching { builder.addDisallowedApplication(it) } } // uninstalled app: skip
+                    val fd = builder.establish() ?: error("VPN permission revoked")
+                    tun = fd
+                    val protector = Protector { sock -> protect(sock.toInt()) }
+                    withContext(Nebula.dispatcher) { Nebmobile.start(yaml!!, fd.fd.toLong(), protector) }
+                    _active.value = id to System.currentTimeMillis()
+                }.onFailure {
+                    Timber.e(it, "Nebula start failed")
+                    shutdownLocked(startId)
+                }
             }
-            // split tunneling (same lists as WireGuard). The app stays inside its own VPN either way: directory, Beam
-            // and renew go over Nebula, and Nebula's own UDP socket is protect()ed
-            val included = intent.getStringArrayListExtra(EXTRA_INCLUDED).orEmpty().filter { it != packageName }
-            val excluded = intent.getStringArrayListExtra(EXTRA_EXCLUDED).orEmpty().filter { it != packageName }
-            if (included.isNotEmpty()) (included + packageName).forEach { runCatching { builder.addAllowedApplication(it) } }
-            else excluded.forEach { runCatching { builder.addDisallowedApplication(it) } } // uninstalled app: skip
-            val fd = builder.establish() ?: error("VPN permission revoked")
-            tun = fd
-            val protector = Protector { sock -> protect(sock.toInt()) }
-            Nebula.call { Nebmobile.start(intent.getStringExtra(EXTRA_YAML)!!, fd.fd.toLong(), protector) }
-            _active.value = id to System.currentTimeMillis()
+            done?.complete(result)
         }
-        result.onFailure {
-            Timber.e(it, "Nebula start failed")
-            shutdown(startId)
-        }
-        pending?.complete(result)
         return START_NOT_STICKY
     }
 
     // another VPN (the WireGuard backend) took over, or the user revoked us in system settings
-    override fun onRevoke() = shutdown()
+    override fun onRevoke() {
+        serviceScope.launch { opMutex.withLock { shutdownLocked() } }
+    }
 
     override fun onDestroy() {
-        shutdown()
+        serviceScope.cancel()
+        // best-effort teardown off the main thread so onDestroy never ANRs on a busy Nebula.dispatcher
+        _active.value = null
+        val fd = tun.also { tun = null }
+        Nebula.dispatcher.executor.execute {
+            runCatching { Nebmobile.stop() }
+            runCatching { fd?.close() }
+        }
+        pendingStart?.complete(Result.failure(IllegalStateException("NebulaVpnService destroyed")))
+        pendingStop?.complete(Unit)
         super.onDestroy()
     }
 
-    private fun shutdown(startId: Int? = null) {
-        Nebula.call { Nebmobile.stop() }
-        tun?.close()
+    private suspend fun shutdownLocked(startId: Int? = null) {
+        withContext(Nebula.dispatcher) { runCatching { Nebmobile.stop() } }
+        runCatching { tun?.close() }
         tun = null
         _active.value = null
-        if (startId == null) {
-            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
-            stopSelf()
-        } else if (stopSelfResult(startId)) {
-            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        withContext(Dispatchers.Main.immediate) {
+            if (startId == null) {
+                ServiceCompat.stopForeground(this@NebulaVpnService, ServiceCompat.STOP_FOREGROUND_REMOVE)
+                stopSelf()
+            } else if (stopSelfResult(startId)) {
+                ServiceCompat.stopForeground(this@NebulaVpnService, ServiceCompat.STOP_FOREGROUND_REMOVE)
+            }
         }
     }
 
@@ -122,14 +153,15 @@ class NebulaVpnService : VpnService() {
         /** (tunnel id, start time ms) of the running Nebula tunnel, or null. */
         val active = _active.asStateFlow()
 
-        @Volatile private var pending: CompletableDeferred<Result<Unit>>? = null
+        @Volatile private var pendingStart: CompletableDeferred<Result<Unit>>? = null
+        @Volatile private var pendingStop: CompletableDeferred<Unit>? = null
 
         /** Starts (or replaces) the Nebula VPN; returns once Nebula runs or failed. Caller holds the tunnel mutex. */
         suspend fun start(
             context: Context, id: Int, name: String, profileJson: String, yaml: String,
             included: List<String> = emptyList(), excluded: List<String> = emptyList(),
         ): Result<Unit> {
-            val done = CompletableDeferred<Result<Unit>>().also { pending = it }
+            val done = CompletableDeferred<Result<Unit>>().also { pendingStart = it }
             context.startForegroundService(
                 Intent(context, NebulaVpnService::class.java)
                     .setAction(ACTION_START)
@@ -140,13 +172,28 @@ class NebulaVpnService : VpnService() {
                     .putStringArrayListExtra(EXTRA_INCLUDED, ArrayList(included))
                     .putStringArrayListExtra(EXTRA_EXCLUDED, ArrayList(excluded))
             )
-            return runCatching { withTimeout(20_000) { done.await() } }.getOrElse { Result.failure(it) }
+            return try {
+                withTimeout(20_000) { done.await() }
+            } catch (e: Throwable) {
+                Result.failure(e)
+            } finally {
+                if (pendingStart === done) pendingStart = null
+            }
         }
 
-        fun stop(context: Context) {
+        /** Stops the Nebula VPN and waits until teardown completes (capped at 5 s). Caller holds the tunnel mutex. */
+        suspend fun stop(context: Context) {
             if (_active.value == null) return
+            val done = CompletableDeferred<Unit>().also { pendingStop = it }
             _active.value = null // the list flips immediately; the service tears down right after
             context.startService(Intent(context, NebulaVpnService::class.java).setAction(ACTION_STOP))
+            try {
+                withTimeout(5_000) { done.await() }
+            } catch (_: Throwable) {
+                // service was already gone or timed out
+            } finally {
+                if (pendingStop === done) pendingStop = null
+            }
         }
     }
 }

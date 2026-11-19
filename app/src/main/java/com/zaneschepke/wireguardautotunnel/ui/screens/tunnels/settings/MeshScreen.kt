@@ -149,7 +149,24 @@ fun MeshScreen(viewModel: TunnelViewModel) {
                 val names = d.devices.associate { it.meshIp to it.name } + profile?.lighthouses.orEmpty().associate { it.ip to it.name }
                 val lighthouses = profile?.lighthouses.orEmpty().map { it.ip }.toSet() + hub
                 val peers = uiState.activeConfig?.peers.orEmpty()
-                d.devices.filter { it.meshIp != d.selfIp && it.online }.forEach { dev ->
+                val onlineDevices = remember(d) { d.devices.filter { it.meshIp != d.selfIp && it.online } }
+                val targets = remember(onlineDevices) { onlineDevices.map { it.reachable }.distinct() }
+                // one sequential ping loop instead of N parallel loops piling onto the single-thread Nebula.dispatcher
+                val rtts by produceState(emptyMap<String, Double?>(), targets, profile != null) {
+                    val acc = mutableMapOf<String, Double?>()
+                    while (true) {
+                        for (ip in targets) {
+                            acc[ip] = if (profile != null) // the app's sockets bypass the engine's ping path
+                                withContext(Nebula.dispatcher) {
+                                    runCatching { Nebmobile.ping(ip, Nebula.PING_TIMEOUT_MS).toDouble() }.getOrNull()
+                                }?.takeIf { it >= 0 }
+                            else runCatching { networkUtils.pingWithStats(ip, 1) }.getOrNull()?.takeIf { it.isReachable }?.rttAvg
+                            value = acc.toMap()
+                        }
+                        delay(10.seconds)
+                    }
+                }
+                onlineDevices.forEach { dev ->
                     // Nebula member on a Nebula tunnel: its hostmap remote / relay; a WireGuard Direct Paths peer: direct;
                     // anything else crosses the hub
                     val endpoint = when {
@@ -166,14 +183,7 @@ fun MeshScreen(viewModel: TunnelViewModel) {
                         PathKind.LIGHTHOUSE -> stringResource(R.string.mesh_path_lighthouse)
                         PathKind.UNKNOWN -> stringResource(R.string.mesh_path_unknown)
                     }
-                    val rtt by produceState<Double?>(null, dev.reachable) {
-                        while (true) {
-                            value = if (profile != null) // the app's sockets bypass the engine's ping path
-                                withContext(Nebula.dispatcher) { runCatching { Nebmobile.ping(dev.reachable, 2000).toDouble() }.getOrNull() }?.takeIf { it >= 0 }
-                            else runCatching { networkUtils.pingWithStats(dev.reachable, 1) }.getOrNull()?.takeIf { it.isReachable }?.rttAvg
-                            delay(10.seconds)
-                        }
-                    }
+                    val rtt = rtts[dev.reachable]
                     SurfaceRow(
                         leading = { Icon(Icons.Outlined.Route, contentDescription = null) },
                         title = "${dev.name} · ${dev.reachable}",

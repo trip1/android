@@ -113,3 +113,23 @@ func TestPingThroughNebula(t *testing.T) {
 		t.Fatal("unanswered ping should time out")
 	}
 }
+
+// Closing the device unblocks a ping in flight immediately rather than waiting out the timeout,
+// and warm peer lookups do zero heap allocations.
+func TestPingUnblocksOnCloseAndZeroAllocHotPath(t *testing.T) {
+	d := newCounting(fakeDev{})
+	q := queue(t, d)
+	p := pkt("10.90.200.4", "10.90.200.7", 60)
+	q.Write(p) // warm
+	if allocs := testing.AllocsPerRun(100, func() { d.peer(p, true) }); allocs != 0 {
+		t.Fatalf("warm peer() allocated %.1f times per packet", allocs)
+	}
+	start := time.Now()
+	done := make(chan int, 1)
+	go func() { done <- d.ping(netip.MustParseAddr("10.90.0.9"), 5*time.Second) }()
+	time.Sleep(20 * time.Millisecond)
+	d.Close()
+	if rtt := <-done; rtt != -1 || time.Since(start) > time.Second {
+		t.Fatalf("ping did not unblock on Close: rtt=%d elapsed=%v", rtt, time.Since(start))
+	}
+}

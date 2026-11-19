@@ -122,7 +122,7 @@ object MeshDirectory {
             out.write(head.toByteArray())
             if (up) ByteArray(64 * 1024).let { buf -> var left = bytes; while (left > 0) { val n = minOf(left, buf.size); out.write(buf, 0, n); left -= n } }
             out.flush()
-            val input = s.getInputStream()
+            val input = s.getInputStream().buffered()
             val status = readHeadLine(input)
             if (status?.split(' ')?.getOrNull(1) != "200") error("HTTP ${status?.split(' ')?.getOrNull(1)}")
             while (readHeadLine(input)?.isNotEmpty() == true) { }

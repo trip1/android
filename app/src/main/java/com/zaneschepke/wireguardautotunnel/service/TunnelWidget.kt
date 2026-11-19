@@ -18,6 +18,7 @@ import com.zaneschepke.wireguardautotunnel.util.network.Nebula
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -39,8 +40,13 @@ class TunnelWidget : AppWidgetProvider() {
             val coordinator: TunnelCoordinator by inject()
             val repo: TunnelRepository by inject()
             scope.launch {
-                combine(coordinator.backendStatus, DirectPaths.directories, DirectPaths.direct, repo.userTunnelsFlow) { st, dirs, direct, tunnels ->
+                // strip byte counters / timestamps before combining so Nebula.parse doesn't run on every stats tick
+                val widgetStatus = coordinator.backendStatus.map { st ->
                     val id = st.activeTunnels.keys.firstOrNull()
+                    val endpoints = id?.let { st.activeTunnels[it]?.activeConfig?.peers?.map { p -> p.endpoint } }.orEmpty()
+                    id to endpoints
+                }.distinctUntilChanged()
+                combine(widgetStatus, DirectPaths.directories, DirectPaths.direct, repo.userTunnelsFlow) { (id, endpoints), dirs, direct, tunnels ->
                     val t = tunnels.firstOrNull { it.id == id }
                     if (id == null || t == null) return@combine Summary(context.getString(R.string.widget_off), "", "", "", false)
                     val nebula = t.nebulaProfile.takeIf { it.isNotEmpty() }?.let(Nebula::parse)
@@ -49,11 +55,10 @@ class TunnelWidget : AppWidgetProvider() {
                         nebula != null -> nebula.exits.firstOrNull { it.ip == (nebula.exitIp ?: nebula.exits.firstOrNull()?.ip) }?.name ?: "hub"
                         else -> "hub"
                     }
-                    val peers = st.activeTunnels[id]?.activeConfig?.peers.orEmpty()
-                    val relayed = if (nebula != null) peers.count { it.endpoint?.startsWith("relay ") == true } else 0
-                    val directN = if (nebula != null) peers.count { it.endpoint != null } - relayed else direct[id].orEmpty().size
+                    val relayed = if (nebula != null) endpoints.count { it?.startsWith("relay ") == true } else 0
+                    val directN = if (nebula != null) endpoints.count { it != null } - relayed else direct[id].orEmpty().size
                     val dir = dirs[id]
-                    val online = dir?.devices?.count { it.online && it.meshIp != dir.selfIp } ?: peers.size
+                    val online = dir?.devices?.count { it.online && it.meshIp != dir.selfIp } ?: endpoints.size
                     Summary(t.name, context.getString(R.string.widget_exit, exit),
                         context.getString(R.string.widget_paths, directN, relayed),
                         context.getString(R.string.widget_online, online), true)

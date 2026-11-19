@@ -38,12 +38,14 @@ var (
 // address in a Nebula network is that host's, one for an unsafe route is its gateway's (the hub).
 type counting struct {
 	overlay.Device
-	peers sync.Map // netip.Addr -> *peerCtr
+	nets  []netip.Prefix // cached at construction: Networks() is fixed per device lifetime
+	peers sync.Map       // netip.Addr -> *peerCtr
 
 	// Ping: our app is off the VPN (Nebula's socket must be), so its pings can't use the tun. Echo requests are
 	// fed to Nebula as if read from the tun; the matching replies are caught in Write and never reach the OS.
 	inject  chan []byte
 	waiting sync.Map // ICMP echo id (uint16) -> chan struct{}
+	pingSeq atomic.Uint32
 	done    chan struct{}
 	once    sync.Once
 }
@@ -70,8 +72,11 @@ func (d *counting) peer(b []byte, src bool) *peerCtr {
 		return nil
 	}
 	inNet := false
-	for _, n := range d.Networks() {
-		inNet = inNet || n.Contains(a)
+	for _, n := range d.nets {
+		if n.Contains(a) {
+			inNet = true
+			break
+		}
 	}
 	if !inNet {
 		gw := d.RoutesFor(a)
@@ -79,6 +84,9 @@ func (d *counting) peer(b []byte, src bool) *peerCtr {
 			return nil
 		}
 		a = gw[0].Addr()
+	}
+	if v, ok := d.peers.Load(a); ok {
+		return v.(*peerCtr)
 	}
 	v, _ := d.peers.LoadOrStore(a, &peerCtr{})
 	return v.(*peerCtr)
@@ -161,6 +169,8 @@ func (q *countingQueue) Read() ([]tio.Packet, error) {
 		q.held = true
 		q.countTx(r.pkts)
 		return r.pkts, nil
+	case <-q.d.done:
+		return nil, os.ErrClosed
 	}
 }
 
@@ -176,7 +186,10 @@ func (q *countingQueue) countTx(pkts []tio.Packet) {
 func (q *countingQueue) Write(b []byte) (int, error) {
 	if p := q.d.peer(b, true); p != nil {
 		p.rx.Add(int64(len(b)))
-		p.lastRx.Store(time.Now().Unix())
+		now := time.Now().Unix()
+		if p.lastRx.Load() != now {
+			p.lastRx.Store(now)
+		}
 	}
 	if id, ok := echoReplyID(b); ok {
 		if w, ok := q.d.waiting.LoadAndDelete(id); ok {
@@ -188,13 +201,13 @@ func (q *countingQueue) Write(b []byte) (int, error) {
 }
 
 func newCounting(dev overlay.Device) *counting {
-	return &counting{Device: dev, inject: make(chan []byte, 4), done: make(chan struct{})}
+	return &counting{Device: dev, nets: dev.Networks(), inject: make(chan []byte, 4), done: make(chan struct{})}
 }
 
 // ping sends one ICMP echo through Nebula and waits for its reply: RTT in ms, -1 on timeout.
 func (d *counting) ping(dst netip.Addr, timeout time.Duration) int {
 	var src netip.Addr
-	for _, n := range d.Networks() {
+	for _, n := range d.nets {
 		if n.Addr().Is4() == dst.Is4() && !src.IsValid() {
 			src = n.Addr()
 		}
@@ -202,20 +215,26 @@ func (d *counting) ping(dst netip.Addr, timeout time.Duration) int {
 	if !src.IsValid() {
 		return -1
 	}
-	id := uint16(time.Now().UnixNano())
+	id := uint16(d.pingSeq.Add(1))
 	w := make(chan struct{})
 	d.waiting.Store(id, w)
 	defer d.waiting.Delete(id)
 	start := time.Now()
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
 	select {
 	case d.inject <- echoRequest(src, dst, id):
-	case <-time.After(timeout):
+	case <-d.done:
+		return -1
+	case <-timer.C:
 		return -1
 	}
 	select {
 	case <-w:
 		return int(time.Since(start).Milliseconds())
-	case <-time.After(timeout - time.Since(start)):
+	case <-d.done:
+		return -1
+	case <-timer.C:
 		return -1
 	}
 }

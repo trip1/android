@@ -26,8 +26,8 @@ object Nebula {
     val dispatcher = java.util.concurrent.Executors.newSingleThreadExecutor { Thread(it, "nebmobile") }
         .asCoroutineDispatcher()
 
-    /** Blocking call on [dispatcher], for the service's synchronous start/stop. */
-    fun <T> call(block: () -> T): T = kotlinx.coroutines.runBlocking(dispatcher) { block() }
+    /** Fast local-only timeout for Nebula ICMP echo pings so unreachable peers don't stall [dispatcher]. */
+    const val PING_TIMEOUT_MS = 1000L
 
     @Serializable
     data class Lighthouse(val name: String = "", val ip: String, val endpoints: List<String> = emptyList())

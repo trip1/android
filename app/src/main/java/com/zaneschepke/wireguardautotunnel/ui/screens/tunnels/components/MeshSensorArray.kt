@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -73,14 +74,40 @@ fun MeshSensorArray(active: ActiveConfig, stored: Config?, route: String? = null
         }
     val style = MaterialTheme.typography.bodySmall
     val color = MaterialTheme.colorScheme.outline
-    stored?.let { MeshEnroll.expiresInDays(it.asQuickString()) }?.let { ExpiryText(it) }
-    active.peers.forEach { peer ->
-        // stored routes: under Full Warp the running peer's first route is 0.0.0.0/0
-        val host =
-            firstAllowedHost(
-                stored?.peers?.firstOrNull { it.publicKey == peer.publicKey }?.allowedIPs
-                    ?: peer.allowedIPs
-            )
+    val expiryDays = remember(stored) { stored?.let { MeshEnroll.expiresInDays(it.asQuickString()) } }
+    expiryDays?.let { ExpiryText(it) }
+    // resolve host per peer once per peer-list change, and run ONE sequential ping loop instead of N concurrent ones
+    val peerHosts = remember(active.peers, stored) {
+        active.peers.map { peer ->
+            val storedPeer = stored?.peers?.firstOrNull { it.publicKey == peer.publicKey }
+            peer to firstAllowedHost(storedPeer?.allowedIPs ?: peer.allowedIPs)
+        }
+    }
+    val hostKeys = remember(peerHosts) { peerHosts.mapNotNull { it.second }.distinct() }
+    val rtts by
+        produceState(emptyMap<String, Double?>(), hostKeys, stored == null) {
+            if (hostKeys.isEmpty()) return@produceState
+            val isNebula = stored == null
+            val acc = mutableMapOf<String, Double?>()
+            while (true) {
+                for (host in hostKeys) {
+                    acc[host] =
+                        if (isNebula) { // Nebula: the app is off its own VPN, so ping through the engine
+                            withContext(Nebula.dispatcher) {
+                                runCatching { Nebmobile.ping(host, Nebula.PING_TIMEOUT_MS).toDouble() }.getOrNull()
+                            }?.takeIf { it >= 0 }
+                        } else {
+                            runCatching { networkUtils.pingWithStats(host, 1) }
+                                .getOrNull()
+                                ?.takeIf { it.isReachable }
+                                ?.rttAvg
+                        }
+                    value = acc.toMap()
+                }
+                delay(10.seconds)
+            }
+        }
+    peerHosts.forEach { (peer, host) ->
         val storedPeer = stored?.peers?.firstOrNull { it.publicKey == peer.publicKey }
         val name = stored?.let { MeshEnroll.peerName(it.headerComments, peer.publicKey) }
             ?: directory?.devices?.firstOrNull { it.publicKey == peer.publicKey }?.name
@@ -90,21 +117,7 @@ fun MeshSensorArray(active: ActiveConfig, stored: Config?, route: String? = null
         val viaHub = if (storedPeer?.allowedIPs?.contains("10.89.200.0/21") == true)
             directory?.devices?.filter { it.kind == "client" && it.online && it.meshIp != directory.selfIp && it.publicKey !in direct }
                 ?.map { it.name }.orEmpty() else emptyList()
-        val rtt by
-            produceState<Double?>(null, host) {
-                if (host == null) return@produceState
-                while (true) {
-                    value =
-                        if (stored == null) { // Nebula: the app is off its own VPN, so ping through the engine
-                            withContext(Nebula.dispatcher) { Nebmobile.ping(host, 2000).toDouble() }.takeIf { it >= 0 }
-                        } else
-                            runCatching { networkUtils.pingWithStats(host, 1) }
-                                .getOrNull()
-                                ?.takeIf { it.isReachable }
-                                ?.rttAvg
-                    delay(10.seconds)
-                }
-            }
+        val rtt = host?.let { rtts[it] }
         val handshake = peer.lastHandshakeSeconds?.takeIf { it > 0 }
         val online = handshake != null && now / 1000 - handshake <= OFFLINE_AFTER_SECONDS
         SurfaceRow(

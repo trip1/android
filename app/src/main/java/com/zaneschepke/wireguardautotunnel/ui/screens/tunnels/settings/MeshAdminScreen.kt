@@ -73,6 +73,8 @@ import com.zaneschepke.wireguardautotunnel.viewmodel.TunnelViewModel
 import io.github.alexzhirkevich.qrose.rememberQrCodePainter
 import kotlin.coroutines.resume
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -126,14 +128,20 @@ fun MeshAdminScreen(viewModel: TunnelViewModel) {
     var partyForm by remember { mutableStateOf(false) }
 
     LaunchedEffect(refresh) {
+        val errs = mutableListOf<String>()
         withContext(Dispatchers.IO) {
-            runCatching {
-                clients = MeshAdmin.parseClients(MeshAdmin.call(hub, "GET", MeshAdmin.path("clients")))
-                rules = MeshAdmin.parseRules(MeshAdmin.call(hub, "GET", MeshAdmin.path("nebula", "rules")))
-                wol = MeshAdmin.parseWol(MeshAdmin.call(hub, "GET", MeshAdmin.path("wol-hosts")))
-                services = MeshAdmin.parseServices(MeshAdmin.call(hub, "GET", MeshAdmin.path("services")))
+            coroutineScope {
+                val cJob = async { runCatching { MeshAdmin.parseClients(MeshAdmin.call(hub, "GET", MeshAdmin.path("clients"))) } }
+                val rJob = async { runCatching { MeshAdmin.parseRules(MeshAdmin.call(hub, "GET", MeshAdmin.path("nebula", "rules"))) } }
+                val wJob = async { runCatching { MeshAdmin.parseWol(MeshAdmin.call(hub, "GET", MeshAdmin.path("wol-hosts"))) } }
+                val sJob = async { runCatching { MeshAdmin.parseServices(MeshAdmin.call(hub, "GET", MeshAdmin.path("services"))) } }
+                cJob.await().onSuccess { clients = it }.onFailure { errs += it.message.orEmpty() }
+                rJob.await().onSuccess { rules = it }.onFailure { errs += it.message.orEmpty() }
+                wJob.await().onSuccess { wol = it }.onFailure { errs += it.message.orEmpty() }
+                sJob.await().onSuccess { services = it }.onFailure { errs += it.message.orEmpty() }
             }
-        }.let { error = it.exceptionOrNull()?.message }
+        }
+        error = errs.firstOrNull { it.isNotBlank() }
     }
 
     /** Screen lock first, then the call; a returned join code opens the QR dialog. */
@@ -168,7 +176,7 @@ fun MeshAdminScreen(viewModel: TunnelViewModel) {
                 if (r.isSuccess) dataStore.saveToDataStore(PARTY_KEY, Party.encode(Party.decode(dataStore.getFromStore(PARTY_KEY)) + n))
                 if (r.isFailure) break
             }
-            partyCodes = codes
+            partyCodes = partyCodes + codes
             refresh++
         }
     }
